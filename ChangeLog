@@ -1,3 +1,19 @@
+2002-06-23 16:57  danda
+
+	* samples/: sample1.tmpl, sample2.tmpl, sample3.tmpl, sample4.tmpl,
+	sample5.tmpl, sample6.tmpl, sample7.php, sample7.tmpl, sample8.php,
+	sample8.tmpl: adding examples to demonstrate new feature (and some
+	old ones better)
+
+2002-06-23 16:31  danda
+
+	* yats.c: fix a crasher when freeing parentloop, exposed since we
+	are now freeing stuff properly
+
+2002-06-23 15:24  danda
+
+	* ChangeLog: preparing for 0.92 release
+
 2002-06-23 15:21  danda
 
 	* README.html: preparing for 0.92 release

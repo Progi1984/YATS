@@ -970,27 +970,27 @@ echo "configure:961: checking for PHP extension directory" >&5
 
 
 
-echo $ac_n "checking --enable-tmpl""... $ac_c" 1>&6
-echo "configure:975: checking --enable-tmpl" >&5
-# Check whether --enable-tmpl or --disable-tmpl was given.
-if test "${enable_tmpl+set}" = set; then
-  enableval="$enable_tmpl"
-  PHP_TMPL=$enableval
+echo $ac_n "checking --enable-yats""... $ac_c" 1>&6
+echo "configure:975: checking --enable-yats" >&5
+# Check whether --enable-yats or --disable-yats was given.
+if test "${enable_yats+set}" = set; then
+  enableval="$enable_yats"
+  PHP_YATS=$enableval
 else
-  PHP_TMPL=no
+  PHP_YATS=no
 fi
 
 
-case "$PHP_TMPL" in
+case "$PHP_YATS" in
 shared,*)
   ext_output="yes, shared"
   ext_shared=yes
-  PHP_TMPL=`echo "$PHP_TMPL"|sed 's/^shared,//'`
+  PHP_YATS=`echo "$PHP_YATS"|sed 's/^shared,//'`
   ;;
 shared)
   ext_output="yes, shared"
   ext_shared=yes
-  PHP_TMPL=yes
+  PHP_YATS=yes
   ;;
 no)
   ext_output="no"
@@ -1005,7 +1005,7 @@ esac
 if test "$php_always_shared" = "yes"; then
   ext_output="yes, shared"
   ext_shared=yes
-  test "$PHP_TMPL" = "no" && PHP_TMPL=yes
+  test "$PHP_YATS" = "no" && PHP_YATS=yes
 fi
 
 echo "$ac_t""$ext_output" 1>&6
@@ -1013,17 +1013,17 @@ echo "$ac_t""$ext_output" 1>&6
 
 
 
-if test "$PHP_TMPL" != "no"; then
+if test "$PHP_YATS" != "no"; then
         cat >> confdefs.h <<\EOF
-#define HAVE_TMPL 1
+#define HAVE_YATS 1
 EOF
 
     
-  EXT_SUBDIRS="$EXT_SUBDIRS tmpl"
+  EXT_SUBDIRS="$EXT_SUBDIRS yats"
   
-  if test -d "$abs_srcdir/ext/tmpl"; then
-    ext_builddir="ext/tmpl"
-    ext_srcdir="$abs_srcdir/ext/tmpl"
+  if test -d "$abs_srcdir/ext/yats"; then
+    ext_builddir="ext/yats"
+    ext_srcdir="$abs_srcdir/ext/yats"
   else
     ext_builddir="."
     ext_srcdir="$abs_srcdir"
@@ -1085,8 +1085,8 @@ targets = $lib_target
 EOF
   fi
 
-    EXT_LTLIBS="$EXT_LTLIBS $ext_builddir/libtmpl.la"
-    EXT_STATIC="$EXT_STATIC tmpl"
+    EXT_LTLIBS="$EXT_LTLIBS $ext_builddir/libyats.la"
+    EXT_STATIC="$EXT_STATIC yats"
   else 
     
   lib_makefile="$ext_builddir/libs.mk"
@@ -1144,7 +1144,7 @@ EOF
   fi
 
     cat >> confdefs.h <<EOF
-#define COMPILE_DL_TMPL 1
+#define COMPILE_DL_YATS 1
 EOF
 
   fi

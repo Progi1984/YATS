@@ -4,8 +4,8 @@
 #undef NO_MINUS_C_MINUS_O
 
 /*   */
-#undef HAVE_TMPL
+#undef HAVE_YATS
 
-/* Whether to build tmpl as dynamic module */
-#undef COMPILE_DL_TMPL
+/* Whether to build yats as dynamic module */
+#undef COMPILE_DL_YATS
 

@@ -5,8 +5,8 @@
 /* #undef NO_MINUS_C_MINUS_O */
 
 /*   */
-#define HAVE_TMPL 1
+#define HAVE_YATS 1
 
-/* Whether to build tmpl as dynamic module */
-#define COMPILE_DL_TMPL 1
+/* Whether to build yats as dynamic module */
+#define COMPILE_DL_YATS 1
 

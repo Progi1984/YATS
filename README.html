@@ -78,30 +78,30 @@ variables for display via the template.
 <XMP>
 <?php
 // Define and parse template.
-$tmpl = tmpl_define("examp.tmpl");
+$yats = yats_define("examp.yats");
 
 // Omitted: Query DB or otherwise obtains some results.
 
 // Assign # of results (scalar)
-tmpl_assign($tmpl, "num_found", "3");
+yats_assign($yats, "num_found", "3");
 
 // Assign the results.  An array of first names and an array of last names.
-tmpl_assign($tmpl, "fname", array("Dan", "John", "Homer"));
-tmpl_assign($tmpl, "lname", array("Libby", "Doe", "Simpson"));
+yats_assign($yats, "fname", array("Dan", "John", "Homer"));
+yats_assign($yats, "lname", array("Libby", "Doe", "Simpson"));
 
 // Assign a page background color and font.
-tmpl_assign($tmpl, array(page_bgcolor => "red", 
+yats_assign($yats, array(page_bgcolor => "red", 
                          default_font => "arial",
                          default_size => "+2") );
 
 // Retrieve buffer with variables inserted, and print.
-print tmpl_getbuf($tmpl);
+print yats_getbuf($yats);
 ?>
 </XMP>
 
 <hr>
 
-<h3>examp.tmpl</h3>
+<h3>examp.yats</h3>
 
 <XMP>
 <HTML>
@@ -191,7 +191,7 @@ Syntax:</h3>
 <h3>
 Description:</h3>
 The variable will be replaced by the corresponding value associated with
-this template.&nbsp; This variable is assigned using the PHP tmpl API.
+this template.&nbsp; This variable is assigned using the PHP yats API.
 Variable names and parameters are case sensitive.
 <h3>
 Recognized Arguments:</h3>
@@ -228,7 +228,7 @@ Automatic Hiding</h3>
 Automatic hiding is disabled by default.  Enable it by setting autohide="yes" in
 the desired section.<P>
 When enabled, if any variable is not found within a section (has not been assigned
-via tmpl_assign), then the entire section will be hidden.&nbsp; This can be useful 
+via yats_assign), then the entire section will be hidden.&nbsp; This can be useful 
 when there is surrounding text (such as a table row) that should only be displayed 
 if the variable is found. Child sections are also hidden.
 <h3>
@@ -256,29 +256,29 @@ undefined.
 PHP API:</h1>
 
 <h3>
-template_object tmpl_define($filename);</h3>
+template_object yats_define($filename);</h3>
 Reads/parses filename and returns an object representing it, or false if
 error.
 <h3>
-bool tmpl_assign($tmpl, $key, $val);</h3>
-Assign key, val pair to tmpl.&nbsp; Returns true/false.
+bool yats_assign($yats, $key, $val);</h3>
+Assign key, val pair to yats.&nbsp; Returns true/false.
 <h3>
-bool tmpl_assign($tmpl, $key, $index_array);</h3>
+bool yats_assign($yats, $key, $index_array);</h3>
 Assign an indexed array of values to key.&nbsp; These will be looped over
 when displayed.
 <h3>
-bool tmpl_assign($tmpl, $assoc_array);</h3>
+bool yats_assign($yats, $assoc_array);</h3>
 Assign multiple keys and values at once. Each key may reference a value
 that is either scalar or an indexed array.
 <h3>
-string tmpl_getbuf($tmpl);</h3>
+string yats_getbuf($yats);</h3>
 Returns buffer with all appropriate substitutions performed.
 <h3>
-assoc_array tmpl_getvars($tmpl);</h3>
+assoc_array yats_getvars($yats);</h3>
 Returns an associative array containing all currently defined key/value
 pairs for a template.
 <h3>
-bool tmpl_hide($tmpl, $name, $bool);</h3>
+bool yats_hide($yats, $name, $bool);</h3>
 Selectively disable/endable display of section with id $name.&nbsp; A value
 of 1 hides the section, a value of 0
 <br>allows it to be displayed.&nbsp; Returns true if section exists, false

@@ -1,7 +1,7 @@
-# $Id: Makefile.in,v 1.1 2001/06/28 19:14:32 danda Exp $
+# $Id: Makefile.in,v 1.2 2001/07/02 04:23:17 danda Exp $
 
-LTLIBRARY_NAME        = libtmpl.la
-LTLIBRARY_SOURCES     = tmpl.c
-LTLIBRARY_SHARED_NAME = tmpl.la
+LTLIBRARY_NAME        = libyats.la
+LTLIBRARY_SOURCES     = yats.c
+LTLIBRARY_SHARED_NAME = yats.la
 
 include $(top_srcdir)/build/dynlib.mk

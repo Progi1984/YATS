@@ -5,54 +5,54 @@ echo "<html><head><title>xmlrpc-epi-php API reference</title></head><body>";
 $api = array(methods => 
       array(
          array(id => "encoding",
-               title => "tmpl API",
+               title => "yats API",
                desc => "these functions are used to load template files, assign variables into them ". 
                        "and interpolate the results, thus creating usable output",
                notes => "",
                methods => array(
-                  array(method => "tmpl_define",
+                  array(method => "yats_define",
                         desc => "load (and parse) a template",
-                        sig => "handle tmpl_define(string filename)",
+                        sig => "handle yats_define(string filename)",
                         ret => "template handle, or false if error",
                         args => array(
                            filename => "path/filename of the template to be loaded"
                            )
                   ),
-                  array(method => tmpl_assign,
+                  array(method => yats_assign,
                         desc => "assign php variable(s) into template namespace for potential use",
-                        sig => "bool tmpl_assign(handle template, string key, mixed value) -- or --<br>" .
-                               "bool tmpl_assign(handle template, array vars)",
+                        sig => "bool yats_assign(handle template, string key, mixed value) -- or --<br>" .
+                               "bool yats_assign(handle template, array vars)",
                         ret => "true on success, else false",
                         args => array(
-                           template => "template handle, as returned from tmpl_define()",
+                           template => "template handle, as returned from yats_define()",
                            key   => "variable name",
                            value => "variable value (scalar)",
                            vars  => "list of variable name/value pairs.  error if value without matching key is found."
                            )
                   ),
-                  array(method => "tmpl_getbuf",
+                  array(method => "yats_getbuf",
                         desc => "inserts assigned variables into template as appropriate and returns buffer",
-                        sig => "string tmpl_getbuf(handle template)",
+                        sig => "string yats_getbuf(handle template)",
                         ret => "buffer containing fully processed template output",
                         args => array(
-                           template => "template handle, as returned from tmpl_define()"
+                           template => "template handle, as returned from yats_define()"
                            )
                   ),
-                  array(method => "tmpl_hide",
+                  array(method => "yats_hide",
                         desc => "sets hidden state of a named template section",
-                        sig => "bool tmpl_hide(handle template, bool hide)",
+                        sig => "bool yats_hide(handle template, bool hide)",
                         ret => "true on success, else false",
                         args => array(
-                           template => "template handle, as returned from tmpl_define()",
+                           template => "template handle, as returned from yats_define()",
                            hide => "if true, hides the section, else displays it"
                            )
                   ),
-                  array(method => "tmpl_getvars",
+                  array(method => "yats_getvars",
                         desc => "returns list of variable names/values assigned to template thus far",
-                        sig => "array tmpl_getvars(handle template)",
+                        sig => "array yats_getvars(handle template)",
                         ret => "array on success, else false",
                         args => array(
-                           template => "template handle, as returned from tmpl_define()"
+                           template => "template handle, as returned from yats_define()"
                            )
                   )
               )

@@ -1,5 +1,5 @@
 Makefile
 .deps
-tmpl.lo
+yats.lo
 .libs
-libtmpl.la
+libyats.la

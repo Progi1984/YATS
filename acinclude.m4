@@ -1,4 +1,4 @@
-dnl $Id: acinclude.m4,v 1.2 2004/11/16 14:52:14 danda Exp $
+dnl $Id: acinclude.m4,v 1.3 2004/11/16 14:58:38 danda Exp $
 dnl
 dnl This file contains local autoconf functions.
 

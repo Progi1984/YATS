@@ -53,7 +53,7 @@ ZEND_GET_MODULE(yats)
 #endif 
 
 #define my_free(x) if(x) free(x); x = 0
-#define my_pefree(x, p) if(x) pefree(x, p); x = 0
+#define my_pefree(x, p) if(x) {if(p) free(x); else efree(x);} x = 0
 #define my_efree(x) if(x) efree(x); x = 0
 
 /* Some stuff to make it easier if we want to become thread safe */
@@ -84,8 +84,10 @@ HashTable* hash_init(dtor_func_t dtr, int bPerm) {
 }
 
 static void my_hash_destroy(HashTable* ht, int bPerm) {
-   zend_hash_destroy(ht);
-   my_pefree(ht, bPerm);
+   if( ht ) {
+      zend_hash_destroy(ht);
+      my_pefree(ht, bPerm);
+   }
 }
 
 
@@ -335,8 +337,7 @@ void token_destroy(token* token, int bPerm) {
          my_pefree(token->buf, bPerm);
       }
       if(token->attrs) {
-         zend_hash_destroy(token->attrs);
-         my_pefree(token->attrs, bPerm);
+         my_hash_destroy(token->attrs, bPerm);
       }
       my_pefree(token, bPerm);
    }
@@ -720,6 +721,8 @@ int release_section_options(void** op) {
    }
    return 0;
 }
+
+
 
 /* Init per request variables for file */
 void per_req_init(parsed_file* f) {

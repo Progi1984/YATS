@@ -78,24 +78,24 @@ variables for display via the template.
 <XMP>
 <?php
 // Define and parse template.
-$yats = yats_define("examp.yats");
+$tmpl = yats_define("examp.tmpl");
 
 // Omitted: Query DB or otherwise obtains some results.
 
 // Assign # of results (scalar)
-yats_assign($yats, "num_found", "3");
+yats_assign($tmpl, "num_found", "3");
 
 // Assign the results.  An array of first names and an array of last names.
-yats_assign($yats, "fname", array("Dan", "John", "Homer"));
-yats_assign($yats, "lname", array("Libby", "Doe", "Simpson"));
+yats_assign($tmpl, "fname", array("Dan", "John", "Homer"));
+yats_assign($tmpl, "lname", array("Libby", "Doe", "Simpson"));
 
 // Assign a page background color and font.
-yats_assign($yats, array(page_bgcolor => "red", 
+yats_assign($tmpl, array(page_bgcolor => "red", 
                          default_font => "arial",
                          default_size => "+2") );
 
 // Retrieve buffer with variables inserted, and print.
-print yats_getbuf($yats);
+print yats_getbuf($tmpl);
 ?>
 </XMP>
 
@@ -260,36 +260,28 @@ template_object yats_define($filename);</h3>
 Reads/parses filename and returns an object representing it, or false if
 error.
 <h3>
-bool yats_assign($yats, $key, $val);</h3>
+bool yats_assign($tmpl, $key, $val);</h3>
 Assign key, val pair to yats.&nbsp; Returns true/false.
 <h3>
-bool yats_assign($yats, $key, $index_array);</h3>
+bool yats_assign($tmpl, $key, $index_array);</h3>
 Assign an indexed array of values to key.&nbsp; These will be looped over
 when displayed.
 <h3>
-bool yats_assign($yats, $assoc_array);</h3>
+bool yats_assign($tmpl, $assoc_array);</h3>
 Assign multiple keys and values at once. Each key may reference a value
 that is either scalar or an indexed array.
 <h3>
-string yats_getbuf($yats);</h3>
+string yats_getbuf($tmpl);</h3>
 Returns buffer with all appropriate substitutions performed.
 <h3>
-assoc_array yats_getvars($yats);</h3>
+assoc_array yats_getvars($tmpl);</h3>
 Returns an associative array containing all currently defined key/value
 pairs for a template.
 <h3>
-bool yats_hide($yats, $name, $bool);</h3>
-Selectively disable/endable display of section with id $name.&nbsp; A value
-of 1 hides the section, a value of 0
-<br>allows it to be displayed.&nbsp; Returns true if section exists, false
-otherwise.
-<br>&nbsp;
-<pre>
-
-
-
-
-</pre>
+bool yats_hide($tmpl, $name, $bool);</h3>
+Selectively disable/enable display of section with id $name.&nbsp; A value
+of true hides the section, a value of false allows it to be displayed.
+Returns true if section exists, false otherwise.
 
 </body>
 </html>

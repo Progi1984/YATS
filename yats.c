@@ -161,7 +161,10 @@ PHP_RSHUTDOWN_FUNCTION(yats)
 
 
 /* define entrypoints */
-php3_module_entry yats_module_entry = {
+zend_module_entry yats_module_entry = {
+#if ZEND_MODULE_API_NO >= 20010901
+   STANDARD_MODULE_HEADER,
+#endif
    "yats",                           /* extension name */
    php_yats_functions,               /* function list */
    PHP_MINIT(yats),                  /* process startup */
@@ -170,7 +173,10 @@ php3_module_entry yats_module_entry = {
    PHP_RSHUTDOWN(yats),              /* request shutdown */
    PHP_MINFO(yats),                  /* extension info */
    NULL,                             /* global startup function */
-   NULL,                             /* global shutdown function */   
+   NULL,                             /* global shutdown function */
+#if ZEND_MODULE_API_NO >= 20010901
+   NO_VERSION_YET,                   /* extension version number (string) */
+#endif
    STANDARD_MODULE_PROPERTIES_EX
 };
 

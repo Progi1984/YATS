@@ -39,6 +39,9 @@
 #include <sys/stat.h>
 
 
+/* poor man's package version system. auto* is friggin _hard_  */
+#define TMPL_VERSION "0.90"
+
 #ifdef COMPILE_DL_TMPL
 ZEND_GET_MODULE(tmpl)
 #endif
@@ -176,6 +179,7 @@ PHP_MINFO_FUNCTION(tmpl)
    php_info_print_table_end();
    
    php_info_print_table_start();
+   php_info_print_table_row(2, "version", TMPL_VERSION);
    php_info_print_table_row(2, "author", "Dan Libby");
    php_info_print_table_row(2, "homepage", "http://yats.sourceforge.net");
    php_info_print_table_row(2, "open sourced by", "Epinions.com");

@@ -52,6 +52,9 @@ ZEND_GET_MODULE(yats)
 #define my_zend_hash_get_current_key(ht, my_key, num_index) zend_hash_get_current_key(ht, my_key, num_index)
 #endif 
 
+#define my_free(x) if(x) free(x); x = 0
+#define my_pefree(x, p) if(x) pefree(x, p); x = 0
+#define my_efree(x) if(x) efree(x); x = 0
 
 /* Some stuff to make it easier if we want to become thread safe */
 typedef struct _yats_globals {
@@ -73,16 +76,16 @@ HashTable* hash_init(dtor_func_t dtr, int bPerm) {
    HashTable* ht = pemalloc(sizeof(HashTable), bPerm);
    if(ht) {
       if(zend_hash_init(ht, 0, NULL, dtr, bPerm) != SUCCESS) {
-         pefree(ht, bPerm);
+         my_pefree(ht, bPerm);
          ht = 0;
       }
    }
    return ht;
 }
 
-void hash_destroy(HashTable* ht, int bPerm) {
+static void my_hash_destroy(HashTable* ht, int bPerm) {
    zend_hash_destroy(ht);
-   pefree(ht, bPerm);
+   my_pefree(ht, bPerm);
 }
 
 
@@ -119,7 +122,7 @@ PHP_MSHUTDOWN_FUNCTION(yats)
 {
    HashTable* ht = YATS_GLOBALS(yats_hash);
    if (ht) {
-      hash_destroy(ht, CACHE_TEMPLATES_BOOL);
+      my_hash_destroy(ht, CACHE_TEMPLATES_BOOL);
       YATS_GLOBALS(yats_hash) = 0;
    }
 
@@ -148,7 +151,7 @@ PHP_RSHUTDOWN_FUNCTION(yats)
       } while(zend_hash_move_forward(ht));
 
       if(!CACHE_TEMPLATES_BOOL) {
-         hash_destroy(ht, CACHE_TEMPLATES_BOOL);
+         my_hash_destroy(ht, CACHE_TEMPLATES_BOOL);
          YATS_GLOBALS(yats_hash) = 0;
       }
    }
@@ -189,10 +192,11 @@ PHP_MINFO_FUNCTION(yats)
 }
 
 void char_ptr_dtor_free(char** val) {
-   free(*val);
+   my_free(*val);
 }
 
 void char_ptr_dtor_efree(char** val) {
+	// crashes (later) if we use my_efree.
    efree(*val);
 }
 
@@ -289,9 +293,9 @@ void simple_list_destroy(simple_list* list, list_iter_callback callback, void* d
             (*callback)(list->current->val, data);
          }
          simple_list_next(list);
-         pefree(free_me, bPerm);
+         my_pefree(free_me, bPerm);
       }
-      pefree(list, bPerm);
+      my_pefree(list, bPerm);
    }
 }
 
@@ -312,20 +316,22 @@ typedef struct _token {
    HashTable*   attrs;
 } token;
 
+void token_list_destroy(simple_list* list, int bPerm);
+
 /* free a token. recurses if token contains children */
 void token_destroy(token* token, int bPerm) {
    if(token) {
       if (token->section) {
-         simple_list_destroy(token->section, (list_iter_callback)token_destroy, (void*)bPerm, bPerm);
+         token_list_destroy(token->section, bPerm);
       }
       if (token->buf) {
-         pefree(token->buf, bPerm);
+         my_pefree(token->buf, bPerm);
       }
       if(token->attrs) {
          zend_hash_destroy(token->attrs);
-         pefree(token->attrs, bPerm);
+         my_pefree(token->attrs, bPerm);
       }
-      pefree(token, bPerm);
+      my_pefree(token, bPerm);
    }
 }
 
@@ -359,31 +365,6 @@ void token_add(simple_list* list, char* start, char* end, token_type type, HashT
    }
 }
 
-/* find token with a given id. recursive */
-void token_find_worker(simple_list* result_list, simple_list* search_list, char* id, int bRecurse) {
-   token* tok = (token*)simple_list_reset(search_list);
-   while (tok) {
-      if (!strcmp(tok->buf, id)) {
-         simple_list_add(result_list, tok, 0);
-      }
-      if (bRecurse && simple_list_length(tok->section) > 0) {
-         token_find_worker(result_list, tok->section, id, bRecurse);
-      }
-      tok = simple_list_next(search_list);
-   }
-}
-
-/* find token with a given id, caller should free results, if any. */
-simple_list* token_find(simple_list* search_list, char* id, int bRecurse)
-{
-   simple_list* res = simple_list_new(0);
-   token_find_worker(res, search_list, id, bRecurse);
-   if (res->start) {
-      return res;
-   }
-   simple_list_destroy(res, 0, 0, 0);
-   return NULL;
-}
 
 /**********************
 * End Token Functions *
@@ -424,7 +405,7 @@ void yatsstring_clear(yatsstring* string) {
 /* release resources for string */
 void yatsstring_free(yatsstring* string) {
    if (string && string->str) {
-      efree(string->str);
+      my_efree(string->str);
    }
 }
 
@@ -523,7 +504,7 @@ HashTable* parse_attrs(char* token, int bPerm) {
 #define TOKEN_END "}}"
 /* parse a buffer/section.  recursive */
 simple_list* parse_buf(char* buf, int bPerm) {
-   simple_list* tokens = simple_list_new(CACHE_TEMPLATES_BOOL);
+   simple_list* tokens = simple_list_new(bPerm);
    char* start = buf; /* start of current token */
    char* end = 0; /* end of current token */
    char* p = strstr(start, TOKEN_START);
@@ -593,7 +574,7 @@ simple_list* parse_buf(char* buf, int bPerm) {
                zend_error(E_ERROR,"Matching end token not found:  %s", end_token);
                start = end + elen + 1;
             }
-            efree(end_token);
+            my_efree(end_token);
          } else {
             token_add(tokens, start, tok_end, variable, attrs, NULL, bPerm);
             start = end + elen + 1;
@@ -649,7 +630,7 @@ parsed_file* get_file(const char* filename, int file_len, int bPerm) {
       buf[file_len] = 0;
 
       res->tokens = parse_buf(buf, bPerm);
-      efree(buf);
+      my_efree(buf);
    } else {
       zend_error(E_WARNING,"Unable to open template %s", filename);
    }
@@ -659,14 +640,20 @@ parsed_file* get_file(const char* filename, int file_len, int bPerm) {
 int release_request_data(void** file) {
    parsed_file* f = *(parsed_file**)file;
 
-   /* These are always per request, so use efree */
-   if (f->assigned_vars) {
-      zval_dtor(f->assigned_vars);
-      FREE_ZVAL(f->assigned_vars);
-   }
-   if (f->section_options) {
-      hash_destroy(f->section_options, CACHE_TEMPLATES_BOOL);
-   }
+	/* nasty hack.  memory bug somewhere causes this to
+	 * crash when cacheing templates. can't find the bug
+	 * but it seems to not crash if we don't free these
+	 */
+	if(!CACHE_TEMPLATES_BOOL) {
+		/* These are always per request, so use my_efree */
+		if (f->assigned_vars) {
+			 zval_dtor(f->assigned_vars);
+			 FREE_ZVAL(f->assigned_vars);
+		}
+		if (f->section_options) {
+			my_hash_destroy(f->section_options, 0);
+		}
+	}
    return 1;
 }
 
@@ -674,12 +661,12 @@ int release_request_data(void** file) {
 int release_file(parsed_file* f, int bPerm) {
    if (f) {
       if (f->filename) {
-         pefree(f->filename, bPerm);
+         my_pefree(f->filename, bPerm);
       }
       if (f->tokens) {
          token_list_destroy(f->tokens, bPerm);
       }
-      pefree(f, bPerm);
+      my_pefree(f, bPerm);
 
       return 1;
    }
@@ -699,7 +686,7 @@ int release_section_options(void** op) {
    if(op) {
       per_request_section_options* options = *(per_request_section_options**)op;
       if(options) {
-         efree(options);
+         my_efree(options);
          return 1;
       }
    }
@@ -710,7 +697,7 @@ int release_section_options(void** op) {
 void per_req_init(parsed_file* f) {
    f->isValid = 0;
    MAKE_STD_ZVAL(f->assigned_vars);
-   f->section_options = hash_init((dtor_func_t)release_section_options, CACHE_TEMPLATES_BOOL);
+   f->section_options = hash_init((dtor_func_t)release_section_options, 0);
    if (f->assigned_vars && array_init(f->assigned_vars) != FAILURE && f->section_options) {
       if (f->tokens) {
          f->isValid = 1;
@@ -951,9 +938,6 @@ PHP_FUNCTION(yats_assign)
                if (zend_hash_get_current_data(arg2->value.ht, (void**)&val) == SUCCESS) {
                   bSuccess = add_val(f, key, *val);
                }
-            }
-            if(key) {
-               pefree(key, arg2->value.ht->persistent);
             }
             if (bSuccess != SUCCESS) {
                zend_error(E_WARNING,"Invalid object in array.  Ignored. %s()",get_active_function_name());

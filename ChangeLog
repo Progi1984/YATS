@@ -1,0 +1,103 @@
+2001-07-02 05:54  danda
+
+	* README.html (1.3): minor mods
+
+2001-07-02 05:47  danda
+
+	* samples/README (1.1): README
+
+2001-07-02 05:34  danda
+
+	* samples/: sample1.php (1.1), sample1.tmpl (1.1), sample2.php
+	(1.1), sample2.tmpl (1.1), sample3.php (1.1), sample3.tmpl (1.1),
+	sample4.php (1.1), sample4.tmpl (1.1), sample5.php (1.1),
+	sample5.tmpl (1.1), sample6.php (1.1), sample6.tmpl (1.1): some
+	samples for the kiddies
+
+2001-07-02 04:23  danda
+
+	* .cvsignore (1.2), API-DOC.html (1.2), API-DOC.php (1.2),
+	Makefile.in (1.2), README.html (1.2), config.h (1.2), config.h.in
+	(1.2), config.m4 (1.2), configure (1.2): *tmpl*  ---> *yats*.  see
+	*tmpl* for previous history
+
+2001-07-02 04:21  danda
+
+	* INSTALL (1.2): reflow text for vi et al
+
+2001-07-02 04:17  danda
+
+	* README (1.2): reflow text for vi et al
+
+2001-07-02 04:14  danda
+
+	* php3_yats.h (1.1), yats.c (1.1), php3_tmpl.h (1.2), tmpl.c (1.5):
+	*tmpl*	---> *yats*.  see *tmpl* for previous history
+
+2001-07-02 03:56  danda
+
+	* tmpl.c (1.4, pre_tmpl_yats_rename): version info
+
+2001-07-02 02:45  danda
+
+	* tmpl.c (1.3): default cacheing to off.  optimize cache setting
+	lookup
+
+2001-07-01 06:11  danda
+
+	* install-sh (1.1, pre_tmpl_yats_rename): install-sh seems to be
+	required
+
+2001-06-29 23:56  danda
+
+	* tmpl.c (1.2): fixup phpinfo() display
+
+2001-06-28 20:59  danda
+
+	* README.html (1.1, pre_tmpl_yats_rename): found docs!!
+
+2001-06-28 19:49  danda
+
+	* INSTALL (1.1), README (1.1) (utags: pre_tmpl_yats_rename): docs
+
+2001-06-28 19:18  danda
+
+	* ltconfig (1.1), config.h (1.1), ltmain.sh (1.1), build/dynlib.mk
+	(1.1), build/fastgen.sh (1.1), build/library.mk (1.1),
+	build/ltlib.mk (1.1), build/mkdep.awk (1.1), build/program.mk
+	(1.1), build/rules.mk (1.1), build/rules_common.mk (1.1),
+	build/shtool (1.1): Initial revision
+
+2001-06-28 19:18  danda
+
+	* ltconfig (1.1.1.1), config.h (1.1.1.1), ltmain.sh (1.1.1.1),
+	build/dynlib.mk (1.1.1.1), build/fastgen.sh (1.1.1.1),
+	build/library.mk (1.1.1.1), build/ltlib.mk (1.1.1.1),
+	build/mkdep.awk (1.1.1.1), build/program.mk (1.1.1.1),
+	build/rules.mk (1.1.1.1), build/rules_common.mk (1.1.1.1),
+	build/shtool (1.1.1.1) (utags: start, pre_tmpl_yats_rename):
+	initial yats import
+
+2001-06-28 19:14  danda
+
+	* .cvsignore (1.1), API-DOC.php (1.1), Makefile.in (1.1), config.m4
+	(1.1), libs.mk (1.1), API-DOC.html (1.1), php3_tmpl.h (1.1), tmpl.c
+	(1.1), acinclude.m4 (1.1), dynlib.m4 (1.1), configure.in (1.1),
+	aclocal.m4 (1.1), configure (1.1), config.guess (1.1), config.h.in
+	(1.1), config.sub (1.1): Initial revision
+
+2001-06-28 19:14  danda
+
+	* .cvsignore (1.1.1.1, pre_tmpl_yats_rename), API-DOC.php (1.1.1.1,
+	pre_tmpl_yats_rename), Makefile.in (1.1.1.1, pre_tmpl_yats_rename),
+	config.m4 (1.1.1.1, pre_tmpl_yats_rename), libs.mk (1.1.1.1,
+	pre_tmpl_yats_rename), API-DOC.html (1.1.1.1,
+	pre_tmpl_yats_rename), php3_tmpl.h (1.1.1.1, pre_tmpl_yats_rename),
+	tmpl.c (1.1.1.1), acinclude.m4 (1.1.1.1, pre_tmpl_yats_rename),
+	dynlib.m4 (1.1.1.1, pre_tmpl_yats_rename), configure.in (1.1.1.1,
+	pre_tmpl_yats_rename), aclocal.m4 (1.1.1.1, pre_tmpl_yats_rename),
+	configure (1.1.1.1, pre_tmpl_yats_rename), config.guess (1.1.1.1,
+	pre_tmpl_yats_rename), config.h.in (1.1.1.1, pre_tmpl_yats_rename),
+	config.sub (1.1.1.1, pre_tmpl_yats_rename) (utags: start): initial
+	yats import
+

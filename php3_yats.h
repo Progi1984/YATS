@@ -30,8 +30,8 @@
 
 */
 
-#ifndef _tmpl_H
-#define _tmpl_H
+#ifndef _yats_H
+#define _yats_H
 
 #include "config.h"
 
@@ -39,17 +39,17 @@
 #include "modules.h"
 #endif
 
-extern php3_module_entry tmpl_module_entry;
-#define tmpl_module_ptr &tmpl_module_entry
+extern php3_module_entry yats_module_entry;
+#define yats_module_ptr &yats_module_entry
 
-PHP_MINFO_FUNCTION(tmpl);
+PHP_MINFO_FUNCTION(yats);
 
-PHP_FUNCTION(tmpl_define);
-PHP_FUNCTION(tmpl_assign);
-PHP_FUNCTION(tmpl_getbuf);
-PHP_FUNCTION(tmpl_getvars);
-PHP_FUNCTION(tmpl_hide);
+PHP_FUNCTION(yats_define);
+PHP_FUNCTION(yats_assign);
+PHP_FUNCTION(yats_getbuf);
+PHP_FUNCTION(yats_getvars);
+PHP_FUNCTION(yats_hide);
 
-#define phpext_tmpl_ptr tmpl_module_ptr
+#define phpext_yats_ptr yats_module_ptr
 
-#endif /* _tmpl_H */
+#endif /* _yats_H */

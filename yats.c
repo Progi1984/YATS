@@ -32,7 +32,7 @@
 
 #include <stdio.h>
 #include "php.h"
-#include "php3_tmpl.h"
+#include "php3_yats.h"
 #include "php_ini.h"
 
 #include <libintl.h>
@@ -40,10 +40,10 @@
 
 
 /* poor man's package version system. auto* is friggin _hard_  */
-#define TMPL_VERSION "0.90"
+#define YATS_VERSION "0.90"
 
-#ifdef COMPILE_DL_TMPL
-ZEND_GET_MODULE(tmpl)
+#ifdef COMPILE_DL_YATS
+ZEND_GET_MODULE(yats)
 #endif
 
 #if ZEND_MODULE_API_NO >= 20001222
@@ -54,17 +54,17 @@ ZEND_GET_MODULE(tmpl)
 
 
 /* Some stuff to make it easier if we want to become thread safe */
-typedef struct _tmpl_globals {
-   HashTable* tmpl_hash;
+typedef struct _yats_globals {
+   HashTable* yats_hash;
    char        bCache;
-} tmpl_globals;
+} yats_globals;
 
-tmpl_globals t_g = {0};
+yats_globals t_g = {0};
 
-#define TMPL_GLOBALS(var) t_g.var
+#define YATS_GLOBALS(var) t_g.var
 
-#define TMPL_CACHE_STR "tmpl_cache"
-#define CACHE_TEMPLATES_BOOL ((int)TMPL_GLOBALS(bCache))
+#define YATS_CACHE_STR "yats_cache"
+#define CACHE_TEMPLATES_BOOL ((int)YATS_GLOBALS(bCache))
 
 /* forward decl */
 int release_request_data(void** f);
@@ -87,40 +87,40 @@ void hash_destroy(HashTable* ht, int bPerm) {
 
 
 /* module entrypoint */
-function_entry php_tmpl_functions[] = {
-   PHP_FE(tmpl_define, NULL)
-   PHP_FE(tmpl_assign, NULL)
-   PHP_FE(tmpl_getbuf, NULL)
-   PHP_FE(tmpl_getvars, NULL)
-   PHP_FE(tmpl_hide, NULL)
+function_entry php_yats_functions[] = {
+   PHP_FE(yats_define, NULL)
+   PHP_FE(yats_assign, NULL)
+   PHP_FE(yats_getbuf, NULL)
+   PHP_FE(yats_getvars, NULL)
+   PHP_FE(yats_hide, NULL)
    {NULL, NULL, NULL}
 };
 
 PHP_INI_BEGIN()
-   PHP_INI_ENTRY(TMPL_CACHE_STR,"0", PHP_INI_ALL, NULL)
+   PHP_INI_ENTRY(YATS_CACHE_STR,"0", PHP_INI_ALL, NULL)
 PHP_INI_END()
 
 
-PHP_MINIT_FUNCTION(tmpl)
+PHP_MINIT_FUNCTION(yats)
 {
 	REGISTER_INI_ENTRIES();
 
 	return SUCCESS;
 }
 
-PHP_RINIT_FUNCTION(tmpl) {
-   /* determine whether to use tmpl cacheing or not */
-   TMPL_GLOBALS(bCache) = INI_INT(TMPL_CACHE_STR);
+PHP_RINIT_FUNCTION(yats) {
+   /* determine whether to use yats cacheing or not */
+   YATS_GLOBALS(bCache) = INI_INT(YATS_CACHE_STR);
 }
 
 
 /* called on module shutdown */
-PHP_MSHUTDOWN_FUNCTION(tmpl)
+PHP_MSHUTDOWN_FUNCTION(yats)
 {
-   HashTable* ht = TMPL_GLOBALS(tmpl_hash);
+   HashTable* ht = YATS_GLOBALS(yats_hash);
    if (ht) {
       hash_destroy(ht, CACHE_TEMPLATES_BOOL);
-      TMPL_GLOBALS(tmpl_hash) = 0;
+      YATS_GLOBALS(yats_hash) = 0;
    }
 
    UNREGISTER_INI_ENTRIES();
@@ -131,9 +131,9 @@ PHP_MSHUTDOWN_FUNCTION(tmpl)
 
 
 /* called at end of request  */
-PHP_RSHUTDOWN_FUNCTION(tmpl)
+PHP_RSHUTDOWN_FUNCTION(yats)
 {
-   HashTable* ht = TMPL_GLOBALS(tmpl_hash);
+   HashTable* ht = YATS_GLOBALS(yats_hash);
    if (ht) {
       void** val = 0;
       zend_hash_internal_pointer_reset(ht);
@@ -149,7 +149,7 @@ PHP_RSHUTDOWN_FUNCTION(tmpl)
 
       if(!CACHE_TEMPLATES_BOOL) {
          hash_destroy(ht, CACHE_TEMPLATES_BOOL);
-         TMPL_GLOBALS(tmpl_hash) = 0;
+         YATS_GLOBALS(yats_hash) = 0;
       }
    }
 
@@ -158,28 +158,28 @@ PHP_RSHUTDOWN_FUNCTION(tmpl)
 
 
 /* define entrypoints */
-php3_module_entry tmpl_module_entry = {
-   "tmpl",                           /* extension name */
-   php_tmpl_functions,               /* function list */
-   PHP_MINIT(tmpl),                  /* process startup */
-   PHP_MSHUTDOWN(tmpl),              /* process shutdown */
-   PHP_RINIT(tmpl),                  /* request startup */
-   PHP_RSHUTDOWN(tmpl),              /* request shutdown */
-   PHP_MINFO(tmpl),                  /* extension info */
+php3_module_entry yats_module_entry = {
+   "yats",                           /* extension name */
+   php_yats_functions,               /* function list */
+   PHP_MINIT(yats),                  /* process startup */
+   PHP_MSHUTDOWN(yats),              /* process shutdown */
+   PHP_RINIT(yats),                  /* request startup */
+   PHP_RSHUTDOWN(yats),              /* request shutdown */
+   PHP_MINFO(yats),                  /* extension info */
    NULL,                             /* global startup function */
    NULL,                             /* global shutdown function */   
    STANDARD_MODULE_PROPERTIES_EX
 };
 
 /* module description */
-PHP_MINFO_FUNCTION(tmpl)
+PHP_MINFO_FUNCTION(yats)
 {
    php_info_print_table_start();
    php_info_print_table_header(1, "YATS -- Yet Another Template System");
    php_info_print_table_end();
    
    php_info_print_table_start();
-   php_info_print_table_row(2, "version", TMPL_VERSION);
+   php_info_print_table_row(2, "version", YATS_VERSION);
    php_info_print_table_row(2, "author", "Dan Libby");
    php_info_print_table_row(2, "homepage", "http://yats.sourceforge.net");
    php_info_print_table_row(2, "open sourced by", "Epinions.com");
@@ -394,49 +394,49 @@ simple_list* token_find(simple_list* search_list, char* id, int bRecurse)
 * Begin String Functions *
 *************************/
 
-typedef struct _tmplstring {
+typedef struct _yatsstring {
    char* str;
    int len;
    int size;
-} tmplstring;
+} yatsstring;
 
-#define TMPLSTRING_INCR 1024
+#define YATSSTRING_INCR 1024
 
 
 /* initialize string */
-void tmplstring_init(tmplstring* string) {
-   string->str = emalloc(TMPLSTRING_INCR);
+void yatsstring_init(yatsstring* string) {
+   string->str = emalloc(YATSSTRING_INCR);
    if (string->str) {
       string->str[0] = 0;
       string->len = 0;
-      string->size = TMPLSTRING_INCR;
+      string->size = YATSSTRING_INCR;
    } else {
       string->size = 0;
    }
 }
 
 /* clear contents of string. does not free memory */
-void tmplstring_clear(tmplstring* string) {
+void yatsstring_clear(yatsstring* string) {
    string->str = 0;
    string->len = 0;
 }
 
 /* release resources for string */
-void tmplstring_free(tmplstring* string) {
+void yatsstring_free(yatsstring* string) {
    if (string && string->str) {
       efree(string->str);
    }
 }
 
 /* add a string of known length */
-void tmplstring_addn(tmplstring* string, char* add, int add_len) {
+void yatsstring_addn(yatsstring* string, char* add, int add_len) {
    if (add && add_len) {
       if (string->len + add_len + 1 > string->size) {
          /* newsize is current length + new length */
          int newsize = string->len + add_len + 1;
 
-         /* align to TMPLSTRING_INCR increments */
-         newsize = newsize - (newsize % TMPLSTRING_INCR) + TMPLSTRING_INCR;
+         /* align to YATSSTRING_INCR increments */
+         newsize = newsize - (newsize % YATSSTRING_INCR) + YATSSTRING_INCR;
          string->str = erealloc(string->str, newsize);
 
          string->size = string->str ? newsize : 0;
@@ -451,9 +451,9 @@ void tmplstring_addn(tmplstring* string, char* add, int add_len) {
 }
 
 /* add a string of unknown length */
-void tmplstring_add(tmplstring* string, char* add) {
+void yatsstring_add(yatsstring* string, char* add) {
    if(add) {
-      tmplstring_addn(string, add, strlen(add));
+      yatsstring_addn(string, add, strlen(add));
    }
 }
 
@@ -725,24 +725,24 @@ parsed_file* get_file_possibly_cached(char* filename) {
 
    if (!stat(filename, &statbuf)) {
       /* see if we already have parsed file stored */
-      if (TMPL_GLOBALS(tmpl_hash)) {
+      if (YATS_GLOBALS(yats_hash)) {
          parsed_file** f2;
-         if (zend_hash_find(TMPL_GLOBALS(tmpl_hash), filename, strlen(filename) + 1, (void**)&f2) == SUCCESS) {
+         if (zend_hash_find(YATS_GLOBALS(yats_hash), filename, strlen(filename) + 1, (void**)&f2) == SUCCESS) {
             if (f2) {
                if (statbuf.st_mtime <= (*f2)->mtime) {
                   per_req_init(*f2);
                   return *f2;
                } else {
                   /* out of date.  release */
-                  zend_hash_del_key_or_index(TMPL_GLOBALS(tmpl_hash), filename, strlen(filename) +1, 0, HASH_DEL_KEY);
+                  zend_hash_del_key_or_index(YATS_GLOBALS(yats_hash), filename, strlen(filename) +1, 0, HASH_DEL_KEY);
                   /* release_file(*f2, CACHE_TEMPLATES_BOOL); */
                }
             }
          }
       } else {
          /* This can live till process/module dies */
-         TMPL_GLOBALS(tmpl_hash) = hash_init((dtor_func_t)release_file_perm, CACHE_TEMPLATES_BOOL);
-         if (!TMPL_GLOBALS(tmpl_hash)) {
+         YATS_GLOBALS(yats_hash) = hash_init((dtor_func_t)release_file_perm, CACHE_TEMPLATES_BOOL);
+         if (!YATS_GLOBALS(yats_hash)) {
             zend_error(E_CORE_ERROR, "Unable to initialize hash");
          }
       }
@@ -751,7 +751,7 @@ parsed_file* get_file_possibly_cached(char* filename) {
       if (f) {
          f->mtime = statbuf.st_mtime;
          per_req_init(f);
-         zend_hash_update(TMPL_GLOBALS(tmpl_hash), filename, strlen(filename)+1, &f, sizeof(parsed_file*), NULL);
+         zend_hash_update(YATS_GLOBALS(yats_hash), filename, strlen(filename)+1, &f, sizeof(parsed_file*), NULL);
       }
    } else {
       zend_error(E_WARNING,"template not found: %s", filename);
@@ -811,20 +811,20 @@ int add_val(parsed_file *f, char* var_id, pval* arg) {
 }
 
 /* Interpolate tokens and variables.  Recursive */
-int fill_buf(parsed_file* f, tmplstring* buf, simple_list* tokens, HashTable* attrs) {
+int fill_buf(parsed_file* f, yatsstring* buf, simple_list* tokens, HashTable* attrs) {
    int iter = 0;
    int num_iters = 1;
    int bSuccess = SUCCESS;
 
-   tmplstring my_buf;
-   tmplstring_init(&my_buf);
+   yatsstring my_buf;
+   yatsstring_init(&my_buf);
 
    while (iter < num_iters) {
       token* tok = simple_list_reset(tokens);
       while (tok) {
          if (tok->type == string) {
             /* Found a string.  Add it */
-            tmplstring_add(&my_buf, tok->buf);
+            yatsstring_add(&my_buf, tok->buf);
          } else if (tok->type == variable) {
             /* Found a variable. Look it up and fill it in */
             pval **res, **res2;
@@ -854,7 +854,7 @@ int fill_buf(parsed_file* f, tmplstring* buf, simple_list* tokens, HashTable* at
 
                /* look up value at index */
                if (zend_hash_index_find((*res)->value.ht, idx, (void**)&res2) == SUCCESS && (*res2)->type == IS_STRING) {
-                  tmplstring_add(&my_buf, (*res2)->value.str.val);
+                  yatsstring_add(&my_buf, (*res2)->value.str.val);
                   bFound = 1;
                }
             }
@@ -863,7 +863,7 @@ int fill_buf(parsed_file* f, tmplstring* buf, simple_list* tokens, HashTable* at
                /* check for alt text */
                if (tok->attrs && 
                    zend_hash_find(tok->attrs, "alt", strlen("alt") + 1, (void**)&attr) == SUCCESS) {
-                  tmplstring_add(&my_buf, (*attr));
+                  yatsstring_add(&my_buf, (*attr));
                }
                /* otherwise, don't show this section, unless autohide="no" is specified. */
                else {
@@ -876,7 +876,7 @@ int fill_buf(parsed_file* f, tmplstring* buf, simple_list* tokens, HashTable* at
                      }
                   }
                   if(bClear) {
-                     tmplstring_clear(&my_buf);
+                     yatsstring_clear(&my_buf);
                      break;
                   }
                }
@@ -901,8 +901,8 @@ int fill_buf(parsed_file* f, tmplstring* buf, simple_list* tokens, HashTable* at
       iter++;
    }
 
-   tmplstring_addn(buf, my_buf.str, my_buf.len);
-   tmplstring_free(&my_buf);
+   yatsstring_addn(buf, my_buf.str, my_buf.len);
+   yatsstring_free(&my_buf);
 
    return bSuccess;
 }
@@ -917,7 +917,7 @@ int fill_buf(parsed_file* f, tmplstring* buf, simple_list* tokens, HashTable* at
 ****************/
 
 /* PHP API: assign one or more variables into a template */
-PHP_FUNCTION(tmpl_assign)
+PHP_FUNCTION(yats_assign)
 {
    pval *arg1, *arg2, *arg3;
    parsed_file* f;
@@ -968,14 +968,14 @@ PHP_FUNCTION(tmpl_assign)
          WRONG_PARAM_COUNT; /* prints/logs a warning and returns */
       }
 
-      /* validate tmpl arg */
+      /* validate yats arg */
       f = (parsed_file*)arg1->value.lval;
       if (f && f->isValid == 1) {
          char* var_id;
          convert_to_string(arg2);
          var_id = arg2->value.str.val;
 
-         /* add value to tmpl */
+         /* add value to yats */
          if (add_val(f, var_id, arg3) == SUCCESS) {
             RETURN_TRUE;
          } else {
@@ -997,7 +997,7 @@ PHP_FUNCTION(tmpl_assign)
  * 3) Store result in newly allocated structure.
  * 4) Return pointer to structure for later use.
  */
-PHP_FUNCTION(tmpl_define)
+PHP_FUNCTION(yats_define)
 {
    char *filename;
    pval* arg;
@@ -1007,7 +1007,7 @@ PHP_FUNCTION(tmpl_define)
       WRONG_PARAM_COUNT; /* prints/logs a warning and returns */
    }
 
-   /* validate tmpl arg */
+   /* validate yats arg */
    convert_to_string(arg);
    filename = arg->value.str.val;
 
@@ -1021,13 +1021,13 @@ PHP_FUNCTION(tmpl_define)
 }
 
 /* PHP API: interpolate and return buffer */
-PHP_FUNCTION(tmpl_getbuf)
+PHP_FUNCTION(yats_getbuf)
 {
    pval *arg;
    parsed_file* f;
 
-   tmplstring buf;
-   tmplstring_init(&buf);
+   yatsstring buf;
+   yatsstring_init(&buf);
 
    RETVAL_FALSE;
 
@@ -1035,7 +1035,7 @@ PHP_FUNCTION(tmpl_getbuf)
       WRONG_PARAM_COUNT; /* prints/logs a warning and returns */
    }
 
-   /* validate tmpl arg */
+   /* validate yats arg */
    f = (parsed_file*)arg->value.lval;
    if (f && f->isValid == 1) {
       if (fill_buf(f, &buf, f->tokens, NULL) == SUCCESS) {
@@ -1049,14 +1049,14 @@ PHP_FUNCTION(tmpl_getbuf)
     * We don't free it here because we didn't make a copy for
     * the return value. A copy would be cleaner, but slower.
     *
-    tmplstring_free(&buf);
+    yatsstring_free(&buf);
     */
 
    return;
 }
 
 /* PHP API: hide/un-hide a section */
-PHP_FUNCTION(tmpl_hide)
+PHP_FUNCTION(yats_hide)
 {
    pval *arg1, *arg2, *arg3;
    parsed_file* f;
@@ -1066,7 +1066,7 @@ PHP_FUNCTION(tmpl_hide)
       WRONG_PARAM_COUNT; /* prints/logs a warning and returns */
    }
 
-   /* validate tmpl arg */
+   /* validate yats arg */
    f = (parsed_file*)arg1->value.lval;
    if (f && f->isValid == 1) {
       per_request_section_options* sec_ops = 0;
@@ -1088,7 +1088,7 @@ PHP_FUNCTION(tmpl_hide)
 }
 
 /* PHP API: return list of vars */
-PHP_FUNCTION(tmpl_getvars)
+PHP_FUNCTION(yats_getvars)
 {
    pval* arg1;
    parsed_file* f;
@@ -1097,7 +1097,7 @@ PHP_FUNCTION(tmpl_getvars)
       WRONG_PARAM_COUNT; /* prints/logs a warning and returns */
    }
 
-   /* validate tmpl arg */
+   /* validate yats arg */
    f = (parsed_file*)arg1->value.lval;
    if (f && f->isValid == 1) {
       *return_value = *f->assigned_vars;

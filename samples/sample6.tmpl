@@ -13,13 +13,16 @@ display this using nested sections.
 </p>
 
 
-<ol>
-
+<table>
+<tr><td><u>flavor</u></td><td><u>color</u></td></tr>
 {{section:flavors}}
-<li>flavor: "{{flavor}}"  colors: {{section:colors}}{{color}} {{/section:colors}} </li>
+<tr><td>{{flavor}}</td>
+    <td>{{section:colors}}<font color="{{color}}">{{color}} </font>{{/section:colors}}</td></tr>
 {{/section:flavors}}
+</table>
 
-</ol>
+<hr>
+<a href="sample5.php">Previous</a> | <a href="sample7.php">Next</a>
 
 
 </body></html>

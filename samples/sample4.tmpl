@@ -8,7 +8,7 @@ a single person, {{person}}.
 </p>
 
 
-<h2>flavors with repeatscalar=no</h2>
+<h2>flavors with repeatscalar="no"</h2>
 <ol>
 
 {{section:flavors}}
@@ -17,7 +17,7 @@ a single person, {{person}}.
 
 </ol>
 
-<h2>flavors with repeatscalar=yes</h2>
+<h2>flavors with repeatscalar="yes"</h2>
 <ol>
 
 {{section:repeat}}
@@ -26,6 +26,24 @@ a single person, {{person}}.
 
 </ol>
 
+
+<h2>flavors with repeatscalar="no", section with autohide="yes"</h2>
+
+<ol>
+
+{{section:repeat autohide="yes"}}
+<li>{{person repeatscalar="no"}} likes {{flavor}} </li>
+{{/section:repeat}}
+
+</ol>
+
+(It doesn't display anything because autohide sees that some variables are missing
+for some rows)
+
+
+
+<hr>
+<a href="sample3.php">Previous</a> | <a href="sample5.php">Next</a>
 
 
 </body></html>

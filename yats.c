@@ -176,7 +176,7 @@ zend_module_entry yats_module_entry = {
    PHP_RSHUTDOWN(yats),              /* request shutdown */
    PHP_MINFO(yats),                  /* extension info */
 #if ZEND_MODULE_API_NO >= 20010901
-   YATS_VERSION,                     /* extension version number (string) */
+   YATS_VERSION,                   /* extension version number (string) */
 #endif
    NULL,                             /* global startup function */
    NULL,                             /* global shutdown function */
@@ -822,10 +822,12 @@ HashTable* get_section_hidden_rows(per_request_section_options* sec_ops) {
 
 int section_hidden_for_row(per_request_section_options* sec_ops, ulong row) {
    int bReturn = 0;
+    
    if(sec_ops && sec_ops->hiddenRows) {
-      int bHidden = 0;
+      int *bHidden = 0;
       if(zend_hash_index_find(sec_ops->hiddenRows, row, (void**)&bHidden) == SUCCESS) {
-         bReturn = bHidden;
+
+          bReturn = (*bHidden == 1 ? 1 : -1);
       }
    }
    return bReturn;
@@ -943,10 +945,10 @@ int fill_buf(parsed_file* f, yatsstring* buf, simple_list* tokens, HashTable* at
             }
          } else if (tok->type == section) {
             per_request_section_options* sec_ops = getSectionOptions(f->section_options, tok->buf, strlen(tok->buf), 0);
-            if (!sec_ops || (!section_hidden_for_row(sec_ops, row+1) && sec_ops->bHiddenAll < 1 )) {
+            if (!sec_ops || sec_ops->bHiddenAll < 1 ) {
                /* Found a section.  Recurse */
                int bParentLoop = 0;
-               int bHidden = 0;
+               int bHidden = 0, bRowState = 0;
                if (tok->attrs) {
                   if (zend_hash_find(tok->attrs, "parentloop", strlen("parentloop") + 1, (void**)&attr) == SUCCESS) {
                      if(!strcmp((*attr), "yes")) {
@@ -960,6 +962,10 @@ int fill_buf(parsed_file* f, yatsstring* buf, simple_list* tokens, HashTable* at
                            bHidden = 1;
                         }
                      }
+                  }
+                  bRowState = section_hidden_for_row(sec_ops, row+1);
+                  if( bRowState != 0 ) {
+                      bHidden = bRowState == 1 ? 1 : 0;
                   }
                }
                if( bHidden == 0 ) {
@@ -1161,14 +1167,19 @@ PHP_FUNCTION(yats_hide)
             HashTable* htHiddenRows = get_section_hidden_rows(sec_ops);
 
             if(htHiddenRows) {
+               int bHiddenRows = bHidden ? 1 : 2;
                convert_to_long(arg4);
-               if(zend_hash_index_update(htHiddenRows, arg4->value.lval, (void*)&bHidden, sizeof(void*), NULL) == SUCCESS) {
+               if(zend_hash_index_update(htHiddenRows, arg4->value.lval, (void*)&bHiddenRows, sizeof(void*), NULL) == SUCCESS) {
                   RETURN_TRUE;
                }
             }
          }
          else {
             sec_ops->bHiddenAll = bHidden;
+
+            // master visibility has changed.  unset child rows.
+            my_hash_destroy(sec_ops->hiddenRows, 0);
+            sec_ops->hiddenRows = 0;
          }
       }
       RETURN_TRUE;

@@ -14,8 +14,11 @@ It is often/usually preferable to install php extensions as shared
 libraries so that they may be loaded/unloaded at will without having to 
 recompile php and/or apache.  
 
+0) You may need to run phpize which should be installed with your
+php installation.  Try running configure first, but if it fails
+then run phpize from within the yats root build directory.
 
-1) run configure.  Don't forget to use the --with-php-config flag.
+1) run configure.
 
 You will probably need to point to the location where your php 
 installation is located so that it knows where to place the generated 
@@ -23,7 +26,7 @@ module.
 
 example configure step.
 
-./configure --with-php-config=/usr/local/php-4.0.5/bin/php-config
+./configure 
 	    
 3) make  
 

@@ -1,52 +1,105 @@
-2002-06-23 16:57  danda
+2004-11-16 09:05  danda
+
+	* README, README.html: 0.9.3 => 0.93
+
+2004-11-16 09:01  danda
+
+	* INSTALL: add note about phpize
+
+2004-11-16 08:58  danda
+
+	* acinclude.m4, aclocal.m4, build/mkdep.awk, build/shtool: after
+	  running phpize
+
+2004-11-16 08:52  danda
+
+	* API-DOC.html, API-DOC.php, README, README.html, acinclude.m4,
+	  aclocal.m4, config.guess, config.h, config.h.in, config.sub,
+	  configure, configure.in, ltmain.sh, utils/yats-xgettext.php:
+	  updating docs, etc for 0.9.3 gettext release
+
+2004-11-16 07:26  danda
+
+	* yats.c: avoid crash when parsing string returned from gettext
+
+2004-09-09 19:51  danda
+
+	* utils/class.TemplateMgr.php: modifications for: tmpl_* -> yats_*,
+	  show/hide individual rows of a section, reset templates, i18n
+	  (gettext) support
+
+2004-09-09 19:43  danda
+
+	* yats.c: Add support for gettext. i18n comes to the Yats masses.
+
+2002-08-25 11:21  danda
+
+	* yats.c: fix a bug with yats_hide when dealing with showing
+	  individual rows of a section that is designated hidden by the
+	  template.  was causing segfault, and generally doing the wrong
+	  thing
+
+2002-07-03 12:54  danda
+
+	* yats.c: put version string in proper place.  oops
+
+2002-06-23 16:01  danda
+
+	* yats.c: update version to 0.92
+
+2002-06-23 15:58  danda
+
+	* ChangeLog: more mods
+
+2002-06-23 15:57  danda
 
 	* samples/: sample1.tmpl, sample2.tmpl, sample3.tmpl, sample4.tmpl,
-	sample5.tmpl, sample6.tmpl, sample7.php, sample7.tmpl, sample8.php,
-	sample8.tmpl: adding examples to demonstrate new feature (and some
-	old ones better)
+	  sample5.tmpl, sample6.tmpl, sample7.php, sample7.tmpl,
+	  sample8.php, sample8.tmpl: adding examples to demonstrate new
+	  feature (and some old ones better)
 
-2002-06-23 16:31  danda
+2002-06-23 15:31  danda
 
 	* yats.c: fix a crasher when freeing parentloop, exposed since we
-	are now freeing stuff properly
+	  are now freeing stuff properly
 
-2002-06-23 15:24  danda
+2002-06-23 14:24  danda
 
 	* ChangeLog: preparing for 0.92 release
 
-2002-06-23 15:21  danda
+2002-06-23 14:21  danda
 
 	* README.html: preparing for 0.92 release
 
-2002-06-23 02:43  danda
+2002-06-23 01:43  danda
 
 	* yats.c: fix another small mem leak reported by php
 
-2002-06-23 01:03  danda
+2002-06-23 00:03  danda
 
 	* yats.c: fix a giant memory leak.  well, not really giant because
-	php frees it on each request, but gross anyway.  Actually, code was
-	doing everything correct, except for assuming SUCCESS != 0 in one
-	place, which caused it to loop just once instead of many
+	  php frees it on each request, but gross anyway.  Actually, code
+	  was doing everything correct, except for assuming SUCCESS != 0 in
+	  one place, which caused it to loop just once instead of many
 
-2002-06-19 16:28  danda
+2002-06-19 15:28  danda
 
 	* yats.c: fix memory corruption when yats_assign is called with
-	incorrect number of args
+	  incorrect number of args
 
-2002-06-13 14:27  danda
+2002-06-13 13:27  danda
 
 	* yats.c: fix crasher when missing trailing quote in attr value
 
-2002-05-31 01:15  danda
+2002-05-31 00:15  danda
 
 	* README.html: enable sections that are hidden in the template by
-	default
+	  default
 
-2002-05-31 01:07  danda
+2002-05-31 00:07  danda
 
 	* yats.c: enable sections that are hidden in the template by
-	default
+	  default
 
 2002-02-10 03:36  danda
 
@@ -55,119 +108,119 @@
 2002-02-05 17:54  danda
 
 	* yats.c: patch submitted by August Zajonc to make YATS build with
-	php 4.1.1
+	  php 4.1.1
 
 2002-01-28 15:58  danda
 
 	* yats.c: added support for parentloop and hide section by row
-	number
+	  number
 
 2002-01-20 02:18  danda
 
 	* yats.c: now yats_assign() appends array values rather than
-	replacing them, meaning it is much easier to populate template list
-	values
+	  replacing them, meaning it is much easier to populate template
+	  list values
 
-2001-10-07 15:42  danda
+2001-10-07 14:42  danda
 
 	* yats.c: update version to 0.91
 
-2001-10-07 15:37  danda
+2001-10-07 14:37  danda
 
 	* yats.c: fix memory relates segfaults. now stable both in cache
-	and non-cache mode
+	  and non-cache mode
 
-2001-07-15 01:31  danda
+2001-07-15 00:31  danda
 
 	* utils/class.TemplateMgr.php: adding Joey's yats class
 
-2001-07-02 01:29  danda
+2001-07-02 00:29  danda
 
 	* ChangeLog: ChangeLog
 
-2001-07-02 00:54  danda
+2001-07-01 23:54  danda
 
 	* README.html: minor mods
 
-2001-07-02 00:47  danda
+2001-07-01 23:47  danda
 
 	* samples/README: README
 
-2001-07-02 00:34  danda
+2001-07-01 23:34  danda
 
 	* samples/: sample1.php, sample1.tmpl, sample2.php, sample2.tmpl,
-	sample3.php, sample3.tmpl, sample4.php, sample4.tmpl, sample5.php,
-	sample5.tmpl, sample6.php, sample6.tmpl: some samples for the
-	kiddies
+	  sample3.php, sample3.tmpl, sample4.php, sample4.tmpl,
+	  sample5.php, sample5.tmpl, sample6.php, sample6.tmpl: some
+	  samples for the kiddies
 
-2001-07-01 23:23  danda
+2001-07-01 22:23  danda
 
 	* .cvsignore, API-DOC.html, API-DOC.php, Makefile.in, README.html,
-	config.h, config.h.in, config.m4, configure: *tmpl*  ---> *yats*. 
-	see *tmpl* for previous history
+	  config.h, config.h.in, config.m4, configure: *tmpl*  ---> *yats*.
+	  see *tmpl* for previous history
 
-2001-07-01 23:21  danda
+2001-07-01 22:21  danda
 
 	* INSTALL: reflow text for vi et al
 
-2001-07-01 23:17  danda
+2001-07-01 22:17  danda
 
 	* README: reflow text for vi et al
 
-2001-07-01 23:14  danda
+2001-07-01 22:14  danda
 
-	* php3_yats.h, yats.c, php3_tmpl.h, tmpl.c: *tmpl*  ---> *yats*. 
-	see *tmpl* for previous history
+	* php3_yats.h, yats.c, php3_tmpl.h, tmpl.c: *tmpl*  ---> *yats*.
+	  see *tmpl* for previous history
 
-2001-07-01 22:56  danda
+2001-07-01 21:56  danda
 
 	* tmpl.c: version info
 
-2001-07-01 21:45  danda
+2001-07-01 20:45  danda
 
 	* tmpl.c: default cacheing to off.  optimize cache setting lookup
 
-2001-07-01 01:11  danda
+2001-07-01 00:11  danda
 
 	* install-sh: install-sh seems to be required
 
-2001-06-29 18:56  danda
+2001-06-29 17:56  danda
 
 	* tmpl.c: fixup phpinfo() display
 
-2001-06-28 15:59  danda
+2001-06-28 14:59  danda
 
 	* README.html: found docs!!
 
-2001-06-28 14:49  danda
+2001-06-28 13:49  danda
 
 	* INSTALL, README: docs
 
-2001-06-28 14:18  danda
+2001-06-28 13:18  danda
 
 	* ltconfig, config.h, ltmain.sh, build/dynlib.mk, build/fastgen.sh,
-	build/library.mk, build/ltlib.mk, build/mkdep.awk,
-	build/program.mk, build/rules.mk, build/rules_common.mk,
-	build/shtool: Initial revision
+	  build/library.mk, build/ltlib.mk, build/mkdep.awk,
+	  build/program.mk, build/rules.mk, build/rules_common.mk,
+	  build/shtool: Initial revision
 
-2001-06-28 14:18  danda
+2001-06-28 13:18  danda
 
 	* ltconfig, config.h, ltmain.sh, build/dynlib.mk, build/fastgen.sh,
-	build/library.mk, build/ltlib.mk, build/mkdep.awk,
-	build/program.mk, build/rules.mk, build/rules_common.mk,
-	build/shtool: initial yats import
+	  build/library.mk, build/ltlib.mk, build/mkdep.awk,
+	  build/program.mk, build/rules.mk, build/rules_common.mk,
+	  build/shtool: initial yats import
 
-2001-06-28 14:14  danda
-
-	* .cvsignore, API-DOC.php, Makefile.in, config.m4, libs.mk,
-	API-DOC.html, php3_tmpl.h, tmpl.c, acinclude.m4, dynlib.m4,
-	configure.in, aclocal.m4, configure, config.guess, config.h.in,
-	config.sub: Initial revision
-
-2001-06-28 14:14  danda
+2001-06-28 13:14  danda
 
 	* .cvsignore, API-DOC.php, Makefile.in, config.m4, libs.mk,
-	API-DOC.html, php3_tmpl.h, tmpl.c, acinclude.m4, dynlib.m4,
-	configure.in, aclocal.m4, configure, config.guess, config.h.in,
-	config.sub: initial yats import
+	  API-DOC.html, php3_tmpl.h, tmpl.c, acinclude.m4, dynlib.m4,
+	  configure.in, aclocal.m4, configure, config.guess, config.h.in,
+	  config.sub: Initial revision
+
+2001-06-28 13:14  danda
+
+	* .cvsignore, API-DOC.php, Makefile.in, config.m4, libs.mk,
+	  API-DOC.html, php3_tmpl.h, tmpl.c, acinclude.m4, dynlib.m4,
+	  configure.in, aclocal.m4, configure, config.guess, config.h.in,
+	  config.sub: initial yats import
 

@@ -53,6 +53,7 @@ ZEND_GET_MODULE(tmpl)
 /* Some stuff to make it easier if we want to become thread safe */
 typedef struct _tmpl_globals {
    HashTable* tmpl_hash;
+   char        bCache;
 } tmpl_globals;
 
 tmpl_globals t_g = {0};
@@ -60,8 +61,7 @@ tmpl_globals t_g = {0};
 #define TMPL_GLOBALS(var) t_g.var
 
 #define TMPL_CACHE_STR "tmpl_cache"
-// #define CACHE_TEMPLATES_BOOL INI_INT(TMPL_CACHE_STR)
-#define CACHE_TEMPLATES_BOOL 0
+#define CACHE_TEMPLATES_BOOL ((int)TMPL_GLOBALS(bCache))
 
 /* forward decl */
 int release_request_data(void** f);
@@ -94,14 +94,20 @@ function_entry php_tmpl_functions[] = {
 };
 
 PHP_INI_BEGIN()
-   PHP_INI_ENTRY(TMPL_CACHE_STR,"1", PHP_INI_ALL, NULL)
+   PHP_INI_ENTRY(TMPL_CACHE_STR,"0", PHP_INI_ALL, NULL)
 PHP_INI_END()
 
 
 PHP_MINIT_FUNCTION(tmpl)
 {
 	REGISTER_INI_ENTRIES();
+
 	return SUCCESS;
+}
+
+PHP_RINIT_FUNCTION(tmpl) {
+   /* determine whether to use tmpl cacheing or not */
+   TMPL_GLOBALS(bCache) = INI_INT(TMPL_CACHE_STR);
 }
 
 
@@ -154,7 +160,7 @@ php3_module_entry tmpl_module_entry = {
    php_tmpl_functions,               /* function list */
    PHP_MINIT(tmpl),                  /* process startup */
    PHP_MSHUTDOWN(tmpl),              /* process shutdown */
-   NULL,                             /* request startup */
+   PHP_RINIT(tmpl),                  /* request startup */
    PHP_RSHUTDOWN(tmpl),              /* request shutdown */
    PHP_MINFO(tmpl),                  /* extension info */
    NULL,                             /* global startup function */
@@ -175,9 +181,7 @@ PHP_MINFO_FUNCTION(tmpl)
    php_info_print_table_row(2, "open sourced by", "Epinions.com");
    php_info_print_table_end();
 
-   /* Remove comments if you have entries in php.ini
    DISPLAY_INI_ENTRIES();
-   */
 }
 
 void char_ptr_dtor_free(char** val) {
@@ -657,7 +661,7 @@ int release_request_data(void** file) {
       FREE_ZVAL(f->assigned_vars);
    }
    if (f->section_options) {
-      hash_destroy(f->section_options, 0);
+      hash_destroy(f->section_options, CACHE_TEMPLATES_BOOL);
    }
    return 1;
 }

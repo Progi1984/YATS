@@ -40,7 +40,7 @@
 
 
 /* poor man's package version system. auto* is friggin _hard_  */
-#define YATS_VERSION "0.91"
+#define YATS_VERSION "0.92"
 
 #ifdef COMPILE_DL_YATS
 ZEND_GET_MODULE(yats)
@@ -178,7 +178,7 @@ zend_module_entry yats_module_entry = {
    NULL,                             /* global startup function */
    NULL,                             /* global shutdown function */
 #if ZEND_MODULE_API_NO >= 20010901
-   NO_VERSION_YET,                   /* extension version number (string) */
+   YATS_VERSION,                   /* extension version number (string) */
 #endif
    STANDARD_MODULE_PROPERTIES_EX
 };

@@ -1,0 +1,73 @@
+Building and Installing yats C extension for php
+
+This file is intended for those who are familiar with building php
+extensions. If you have not done this before, it is likely the instructions
+will not work exactly, and you will be out of luck.  In this case,
+you may be able to find a binary distribution, although I have created
+none as of this writing.
+
+For more information, see http://yats.sourceforge.net
+
+INSTALLATION AS A SHARED LIBRARY (.so)
+
+It is often/usually preferable to install php extensions as shared libraries
+so that they may be loaded/unloaded at will without having to recompile php
+and/or apache.
+
+
+1) run configure.  Don't forget to use the --with-php-config flag.
+
+You will probably need to point to the location where your php installation
+is located so that it knows where to place the generated module.
+
+example configure step.
+
+./configure --with-php-config=/usr/local/php-4.0.5/bin/php-config
+	    
+3) make  
+
+If all goes well, it will build.  If not, you will need to debug.  If you
+find/fix a bug, please let us know (yats-devel@lists.sourceforge.net).
+
+4) make install
+
+This will copy the .so into your php extensions directory. You may need to have
+root permissions to execute this step.
+
+5) tell php about the extension.
+
+Add the following line to your php.ini (usually located in /usr/local/lib/php.ini)
+
+extension=tmpl.so
+
+6) restart your webserver.  If using apache, this would be something like:
+
+cd /usr/local/httpd/bin
+./apachectl stop; ./apachectl start
+
+note: you may need to have root permissions.
+
+7) verify installation was successful
+
+test 1) phpinfo()
+
+load a php script with a call to phpinfo().  You should see a section stating that
+the tmpl/yats module is enabled.
+
+test 2) test scripts
+
+copy (or symlink) the scripts in ./sample into your webserver's docroot.
+execute any of the test php scripts and ensure they work as stated without 
+any "function not found" errors.
+
+ 
+INSTALLATION AS A BUILT-IN EXTENSION
+
+I have done this successfully on a non-standard php install, however I do not
+have specific instructions at this time.  If you are familiar with this method
+of building php extensions, it should work just about like any other.
+
+See http://www.php.net for more info on php extensions.
+
+If you have specific instructions you'd like to contribute, please send them to
+yats-devel@lists.sourceforge.net

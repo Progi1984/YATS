@@ -1,4 +1,4 @@
-yats
+YATS   ( Yet Another Templating System )
 
 This library is a PHP C extension that provides templating facilities.  
 This allows the web developer to cleanly separate php code (logic) from 
@@ -23,8 +23,14 @@ nested sections, allowing the web developer to control things to a very
 fine degree.  However, there are no real conditional expressions or other 
 logical constructs.  There is no support for embedding php code within a 
 template, now will there ever be as it violates the model.  There is no 
-danger of this becoming another "language within a language".  
+danger of this becoming another "language within a language".
 
+4) internationalization. (i18n, l10n)
+
+YATS >= 0.9.3 supports the GNU gettext library/tools and utilizes special tags to mark
+certain content for inclusion in the translation catalog. This allows
+creation of a single set of HTML templates that can be used to display
+your site in multiple languages.
 
 
 Various iterations of this code have been/are running at Epinions.com and 

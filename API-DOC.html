@@ -16,18 +16,18 @@
  <p>
  <b>returns:</b> true on success, else false
  <p><b>args:</b></br><blockquote><b>template:</b> template handle, as returned from yats_define()<br><b>key:</b> variable name<br><b>value:</b> variable value (scalar)<br><b>vars:</b> list of variable name/value pairs.  error if value without matching key is found.<br></blockquote><br><br></blockquote>
- <h3><a name='yats_getbuf'>string yats_getbuf(handle template)</a></h3>
+ <h3><a name='yats_getbuf'>string yats_getbuf(handle template [, string locale [, string gettext_domain [, string gettext_dir]]])</a></h3>
  <blockquote>
- inserts assigned variables into template as appropriate and returns buffer
+ inserts assigned variables into template as appropriate and returns buffer. If a locale is given and gettext is properly configured and template contains {{text}}..{{/text}} tags, then this function will return localized strings.
  <p>
  <b>returns:</b> buffer containing fully processed template output
- <p><b>args:</b></br><blockquote><b>template:</b> template handle, as returned from yats_define()<br></blockquote><br><br></blockquote>
- <h3><a name='yats_hide'>bool yats_hide(handle template, bool hide)</a></h3>
+ <p><b>args:</b></br><blockquote><b>template:</b> template handle, as returned from yats_define()<br><b>locale:</b> code for a valid locale installed on your O/S, eg es_ES<br><b>gettext_domain:</b> filename of gettext messages file, without the path or extension.  ie: messages, NOT messages.po<br><b>gettext_dir:</b> directory in which to find the messages file. If ommitted default paths are searched by gettext<br></blockquote><br><br></blockquote>
+ <h3><a name='yats_hide'>bool yats_hide(handle template, string section, bool hide [, int row])</a></h3>
  <blockquote>
  sets hidden state of a named template section
  <p>
  <b>returns:</b> true on success, else false
- <p><b>args:</b></br><blockquote><b>template:</b> template handle, as returned from yats_define()<br><b>hide:</b> if true, hides the section, else displays it<br></blockquote><br><br></blockquote>
+ <p><b>args:</b></br><blockquote><b>template:</b> template handle, as returned from yats_define()<br><b>section:</b> name of the section to hide/show<br><b>hide:</b> if true, hides the section, else displays it<br><b>row:</b> Optional. While looping, hide/show this section for specific row only.  1 based.<br></blockquote><br><br></blockquote>
  <h3><a name='yats_getvars'>array yats_getvars(handle template)</a></h3>
  <blockquote>
  returns list of variable names/values assigned to template thus far

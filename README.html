@@ -28,7 +28,8 @@ into a set of stored data structures and uses these to quickly substitute
 new variables on subsequent calls to retrieve the template contents. The file
 is not re-parsed unless it changes or a new server process begins, no matter
 how many requests occur. Finally, YATS adds some additional features such as multiple
-nested sections within a template, and implicit looping within sections.
+nested sections within a template, implicit looping within sections, and 
+Internationalization support via GNU gettext.
 
 <br>&nbsp;
 <h1>
@@ -252,6 +253,66 @@ Recognized Arguments</h3>
 <li><I>autohide</I>="<I>yes</I>" hide this section if any of the variables contained within are undefined. 
 <li><I>hidden</I>="<I>yes</I>" the section is hidden by default until explicitly shown via yats_hide(false). can be used for template comments.
 <li><I>parentloop</I>="<I>yes</I>" the child section loops with the parent instead of looping all the way through for each loop the parent's loops.
+
+<h2>Internationalization (I18n) with GNU Gettext</h2>
+
+<h3>Syntax:</h3>
+
+{{text}}My user-visible display string in english. Embedded variables will not be parsed. (faster){{/text}}
+
+<p>-- or --</p>
+
+{{text parse="yes"}}My user-visible display string in english. ( Hello {{username}}! ). Embedded variables WILL be parsed. (slower){{/text}}
+
+<h3>Description:</h3>
+
+<p>
+Starting with version 0.9.3, YATS supports special tags to invoke the GNU Gettext library.
+This facilitates maintenance of a multi-language website. 
+<p>
+Any content that is within
+a {{text}} .. {{/text}} block will be used as input to the gettext() function.  If a matching
+string is found within your website's message catalog for the requested locale then it will
+be used. Otherwise, the input string will be used.
+<p>
+The {{text}} .. {{/text}} syntax is specific to YATS.  A special script is provided to parse
+a YATS template and turn it into a file that can be processed by the GNU xgettext program.
+The script is utils/yats-xgettext.php.  See comments at top of script for usage details.
+<p>
+The typical steps for creating and using an internationalized template look about like:
+<ul>
+<li>Create a regular yats template</li>
+<li>Mark user visible strings (to be translated) with {{text}} .. {{/text}} tags.
+<li>Run the yats-xgettext.php program to create input for xgettext
+<li>Use GNU gettext program to create a master POT file from the output
+<li>Create the locale directory structure to hold locales, eg: es_ES/LC_MESSAGES, en_US/LC_MESSAGES, etc.
+<li>Copy master POT file into LC_MESSAGES directory for each locale. ( Best to use GNU msginit )
+<li>Translate the strings in the locale messages file
+<li>Use GNU msgfmt to create the binary file used by gettext at runtime.
+<li>In your php code, pass the locale, message file, and locale root directory to yats_getbuf.
+</ul>
+
+<p>Once created, you will still need to be modifying your templates from time to time, which means the message catalog must 
+also be updated. The update process looks something like
+<ul>
+<li>Run the yats-xgettext.php program to create input for xgettext
+<li>Use GNU gettext program to create a master POT file from the output
+<li>Use GNU msgmerge program to merge new strings into locale specific message files.
+<li>Edit, translate as necessary.
+<li>Use GNU msgfmt to create the binary file used by gettext at runtime.
+</ul>
+
+<p>Hints / Tips
+<ul>
+<li>Read the GNU gettext manual for details and perspective on what I've written above.
+<li>Strings from all of your application's templates can be combined into a single master POT file using standard unix tools.
+<li>You can also use gettext() directly within your PHP code and use GNU xgettext to extract those strings into the master POT file.
+<li>For clean separation, it is probably best to avoid placing any HTML markup inside your {{text}} .. {{/text}} tags.
+<li>Create scripts to make the routine task of generating master POT file, merging new strings, and creating binary file a one-click non-ordeal.
+</ul>
+
+
+
 <h1>
 PHP API:</h1>
 
@@ -271,17 +332,20 @@ bool yats_assign($tmpl, $assoc_array);</h3>
 Assign multiple keys and values at once. Each key may reference a value
 that is either scalar or an indexed array.
 <h3>
-string yats_getbuf($tmpl);</h3>
+string yats_getbuf($tmpl [, string locale [, string gettext_domain [, string gettext_dir]]]);</h3>
 Returns buffer with all appropriate substitutions performed.
+If a locale is given and gettext is properly configured and template contains {{text}}..{{/text}} tags, then this function will return localized strings.
 <h3>
 assoc_array yats_getvars($tmpl);</h3>
 Returns an associative array containing all currently defined key/value
 pairs for a template.
 <h3>
-bool yats_hide($tmpl, $name, $bool);</h3>
+bool yats_hide($tmpl, $name, $bool [, $row]);</h3>
 Selectively disable/enable display of section with id $name.&nbsp; A value
 of true hides the section, a value of false allows it to be displayed.
-Returns true if section exists, false otherwise.
+Returns true if section exists, false otherwise. If row is present then
+the section will be hidden/shown for only for the loop iteration matching $row.
+( row is 1 based )
 
 </body>
 </html>

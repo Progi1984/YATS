@@ -679,14 +679,20 @@ int release_file_perm(void** f) {
 }
 
 typedef struct _per_request_section_options {
-   int bHidden;
+   int bHiddenAll;
+   HashTable* hiddenRows;
 } per_request_section_options;
 
 int release_section_options(void** op) {
    if(op) {
       per_request_section_options* options = *(per_request_section_options**)op;
       if(options) {
+         if(options->hiddenRows) {
+            my_hash_destroy(options->hiddenRows, 0);
+         }
+
          my_efree(options);
+
          return 1;
       }
    }
@@ -756,17 +762,19 @@ parsed_file* get_file_possibly_cached(char* filename) {
 **************************/
 
 per_request_section_options* getSectionOptions(HashTable* section_hash, char* id, int id_len, int bCreate) {
-   per_request_section_options* sec_ops = 0;
-   if(zend_hash_find(section_hash, 
-                     id, 
-                     id_len + 1, 
-                     (void**)&sec_ops) != SUCCESS) {
-
+   per_request_section_options *sec_ops = 0, **psec_ops;
+   if(zend_hash_find(section_hash, id, id_len + 1, 
+                     (void**)&psec_ops) == SUCCESS) {
+      return *psec_ops;
+   }
+   else {
       if(bCreate) {
          /* free'd at end of request in release_section_options() */
          sec_ops = ecalloc(1, sizeof(per_request_section_options)); 
 
          if(sec_ops) {
+            sec_ops->hiddenRows = 0;
+
             zend_hash_update(section_hash, id, id_len+1, (void *)&sec_ops, sizeof(per_request_section_options *), NULL);
          }
       }
@@ -774,6 +782,28 @@ per_request_section_options* getSectionOptions(HashTable* section_hash, char* id
    return sec_ops;
 }
 
+HashTable* get_section_hidden_rows(per_request_section_options* sec_ops) {
+   HashTable* ht = NULL;
+   if(sec_ops) {
+      if(!sec_ops->hiddenRows) {
+         /* we're just storing ints in here. no destructor necessary */
+         sec_ops->hiddenRows = hash_init((dtor_func_t)0, 0);
+      }
+      ht = sec_ops->hiddenRows;
+   }
+   return ht;
+}
+
+int section_hidden_for_row(per_request_section_options* sec_ops, ulong row) {
+   int bReturn = 0;
+   if(sec_ops && sec_ops->hiddenRows) {
+      int bHidden = 0;
+      if(zend_hash_index_find(sec_ops->hiddenRows, row, (void**)&bHidden) == SUCCESS) {
+         bReturn = bHidden;
+      }
+   }
+   return bReturn;
+}
 
 int add_arg(pval *res, pval* arg) {
    pval* tmp;
@@ -816,15 +846,15 @@ int add_val(parsed_file *f, char* var_id, pval* arg) {
 }
 
 /* Interpolate tokens and variables.  Recursive */
-int fill_buf(parsed_file* f, yatsstring* buf, simple_list* tokens, HashTable* attrs) {
-   int iter = 0;
-   int num_iters = 1;
+int fill_buf(parsed_file* f, yatsstring* buf, simple_list* tokens, HashTable* attrs, int bLoop, int row) {
+   int num_rows = 1;
    int bSuccess = SUCCESS;
+   char** attr;
 
    yatsstring my_buf;
    yatsstring_init(&my_buf);
 
-   while (iter < num_iters) {
+   do {
       token* tok = simple_list_reset(tokens);
       while (tok) {
          if (tok->type == string) {
@@ -836,13 +866,12 @@ int fill_buf(parsed_file* f, yatsstring* buf, simple_list* tokens, HashTable* at
             int bFound = 0;
             if (zend_hash_find(f->assigned_vars->value.ht, tok->buf, strlen(tok->buf) + 1, (void**)&res) == SUCCESS) {
                int num_elem = zend_hash_num_elements((*res)->value.ht);
-               int idx = iter;
+               int idx = row;
                int bRepeatScalar = 0;
 
                /* If variable is scalar, then we will repeat it unless repeatscalar="no" is specified */
                if(num_elem == 1) {
                   if(tok->attrs) {
-                     char** attr;
                      if (zend_hash_find(tok->attrs, "repeatscalar", strlen("repeatscalar") + 1, (void**)&attr) == SUCCESS) {
                         if(!strcmp((*attr), "yes")) {
                            bRepeatScalar = 1;
@@ -853,8 +882,8 @@ int fill_buf(parsed_file* f, yatsstring* buf, simple_list* tokens, HashTable* at
                }
 
                /* find minimum number */
-               if ( (num_elem > bRepeatScalar )  && (num_elem < num_iters || num_iters <= 1)) {
-                  num_iters = num_elem;
+               if ( (num_elem > bRepeatScalar )  && (num_elem < num_rows || num_rows <= 1)) {
+                  num_rows = num_elem;
                }
 
                /* look up value at index */
@@ -888,10 +917,23 @@ int fill_buf(parsed_file* f, yatsstring* buf, simple_list* tokens, HashTable* at
             }
          } else if (tok->type == section) {
             per_request_section_options* sec_ops = getSectionOptions(f->section_options, tok->buf, strlen(tok->buf), 0);
-            if (!sec_ops || !sec_ops->bHidden) {
+            if (!sec_ops || (!section_hidden_for_row(sec_ops, row+1) && !sec_ops->bHiddenAll )) {
                /* Found a section.  Recurse */
-               if (fill_buf(f, &my_buf, tok->section, tok->attrs) == FAILURE) {
-                  bSuccess = FAILURE;
+               int bParentLoop = 0;
+               if (tok->attrs) {
+                  if (zend_hash_find(tok->attrs, "parentloop", strlen("parentloop") + 1, (void**)&attr) == SUCCESS) {
+                     if(!strcmp((*attr), "yes")) {
+                        bParentLoop = 1;
+                     }
+                  }
+               }
+               if(bParentLoop) {
+                  bSuccess = fill_buf(f, &my_buf, tok->section, tok->attrs, 0, row);
+               }
+               else {
+                  bSuccess = fill_buf(f, &my_buf, tok->section, tok->attrs, 1, 0);
+               }
+               if(bSuccess == FAILURE) {
                   break;
                }
             }
@@ -903,8 +945,8 @@ int fill_buf(parsed_file* f, yatsstring* buf, simple_list* tokens, HashTable* at
          }
          tok = simple_list_next(tokens);
       }
-      iter++;
-   }
+      row++;
+   } while (bLoop && row < num_rows);
 
    yatsstring_addn(buf, my_buf.str, my_buf.len);
    yatsstring_free(&my_buf);
@@ -1040,7 +1082,7 @@ PHP_FUNCTION(yats_getbuf)
    /* validate yats arg */
    f = (parsed_file*)arg->value.lval;
    if (f && f->isValid == 1) {
-      if (fill_buf(f, &buf, f->tokens, NULL) == SUCCESS) {
+      if (fill_buf(f, &buf, f->tokens, NULL, 1, 0) == SUCCESS) {
          RETVAL_STRING(buf.str, 0); /* do not duplicate */
       }
    } else {
@@ -1060,11 +1102,16 @@ PHP_FUNCTION(yats_getbuf)
 /* PHP API: hide/un-hide a section */
 PHP_FUNCTION(yats_hide)
 {
-   pval *arg1, *arg2, *arg3;
+   pval *arg1, *arg2, *arg3, *arg4 = NULL;
    parsed_file* f;
+   int row = - 1;
 
-
-   if (ARG_COUNT(ht) != 3 || getParameters(ht, 3, &arg1, &arg2, &arg3) == FAILURE) {
+   if (ARG_COUNT(ht) == 3) {
+      if (getParameters(ht, 3, &arg1, &arg2, &arg3) == FAILURE) {
+         WRONG_PARAM_COUNT; /* prints/logs a warning and returns */
+      }
+   }
+   else if (ARG_COUNT(ht) != 4 || getParameters(ht, 4, &arg1, &arg2, &arg3, &arg4) == FAILURE) {
       WRONG_PARAM_COUNT; /* prints/logs a warning and returns */
    }
 
@@ -1078,7 +1125,20 @@ PHP_FUNCTION(yats_hide)
 
       sec_ops = getSectionOptions(f->section_options, arg2->value.str.val, arg2->value.str.len, 1);
       if(sec_ops) {
-         sec_ops->bHidden = arg3->value.lval ? 1 : 0;
+         int bHidden = arg3->value.lval ? 1 : 0;
+         if(arg4) {
+            HashTable* htHiddenRows = get_section_hidden_rows(sec_ops);
+
+            if(htHiddenRows) {
+               convert_to_long(arg4);
+               if(zend_hash_index_update(htHiddenRows, arg4->value.lval, (void*)&bHidden, sizeof(void*), NULL) == SUCCESS) {
+                  RETURN_TRUE;
+               }
+            }
+         }
+         else {
+            sec_ops->bHiddenAll = bHidden;
+         }
       }
       RETURN_TRUE;
 

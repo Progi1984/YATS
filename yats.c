@@ -1001,6 +1001,7 @@ PHP_FUNCTION(yats_assign)
       }
       if (arg2->type != IS_ARRAY) {
          zend_error(E_WARNING,"Arg 2 is not an array.  Invalid param for %s() when called with two args",get_active_function_name());
+         RETURN_FALSE;
       }
 
       f = (parsed_file*)arg1->value.lval;

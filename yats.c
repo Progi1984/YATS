@@ -148,7 +148,8 @@ PHP_RSHUTDOWN_FUNCTION(yats)
          else {
             break;
          }
-      } while(zend_hash_move_forward(ht));
+      } while(zend_hash_move_forward(ht) == SUCCESS );
+
 
       if(!CACHE_TEMPLATES_BOOL) {
          my_hash_destroy(ht, CACHE_TEMPLATES_BOOL);
@@ -470,6 +471,7 @@ HashTable* parse_attrs(char* token, int bPerm) {
    else {
       while((p = strchr(p, ' ')) != NULL && bSuccess == SUCCESS) {
          char* key = 0, *value = 0;
+         int newkey = 0;
          bSuccess = FAILURE;
          while((int)*(++p) && isspace(*p)); /* advance to key */
          if(*p) {
@@ -477,6 +479,7 @@ HashTable* parse_attrs(char* token, int bPerm) {
             while(*(++p) && isalnum(*p)); /* to end of key.  alpha numerics only */
             if(*p) {
                key = bPerm ? (char*)zend_strndup(key, p - key) : estrndup(key, p - key);
+               newkey = 1;
                while(*(p) && isspace(*p)) p++;
                if(*p == '=') {
                   while(*(++p) && isspace(*p)); /* advance to value */
@@ -498,6 +501,9 @@ HashTable* parse_attrs(char* token, int bPerm) {
          if(key && value) {
             bSuccess = zend_hash_update(attrs, key, strlen(key)+1, (void *)&value, sizeof(char *), NULL);
             /* bSuccess = add_assoc_string(attrs, key, value, 1); */
+         }
+         if(newkey && key) {
+            my_pefree(key, bPerm);
          }
       }
    }
@@ -651,6 +657,7 @@ parsed_file* get_file(const char* filename, int file_len, int bPerm) {
 int release_request_data(void** file) {
    parsed_file* f = *(parsed_file**)file;
 
+
 	/* nasty hack.  memory bug somewhere causes this to
 	 * crash when cacheing templates. can't find the bug
 	 * but it seems to not crash if we don't free these
@@ -665,6 +672,7 @@ int release_request_data(void** file) {
 			my_hash_destroy(f->section_options, 0);
 		}
 	}
+
    return 1;
 }
 

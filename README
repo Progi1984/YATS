@@ -1,14 +1,16 @@
 yats
 
-This library is a PHP C extension that provides templating facilities. This
-allows the web developer to cleanly separate php code (logic) from html (display).
+This library is a PHP C extension that provides templating facilities.  
+This allows the web developer to cleanly separate php code (logic) from 
+html (display).  
 
 Key benefits of using this extension as compared to other php templating 
-solutions are:
+solutions are: 
 
 1) speed.  
 
-Because it is in C, it is typically faster than implementations written in php.
+Because it is in C, it is typically faster than implementations written in 
+php.  
 
 2) ease of use
 
@@ -16,22 +18,23 @@ Both the php API and the templating syntax are quite simple.
 
 3) flexible, yet not a complete language.
 
-the templating syntax provides support for simple implicit loops and nested sections,
-allowing the web developer to control things to a very fine degree.  However, there 
-are no real conditional expressions or other logical constructs. There is no support
-for embedding php code within a template, now will there ever be as it violates the
-model.  There is no danger of this becoming another "language within a language".
+the templating syntax provides support for simple implicit loops and 
+nested sections, allowing the web developer to control things to a very 
+fine degree.  However, there are no real conditional expressions or other 
+logical constructs.  There is no support for embedding php code within a 
+template, now will there ever be as it violates the model.  There is no 
+danger of this becoming another "language within a language".  
 
 
 
-Various iterations of this code have been/are running at 
-Epinions.com and are sufficiently fast for the high traffic volume this 
-site encounters, with dozens of templates being processed during each 
-http request.  No specific speed claims are made.  Your mileage may vary.
+Various iterations of this code have been/are running at Epinions.com and 
+are sufficiently fast for the high traffic volume this site encounters, 
+with dozens of templates being processed during each http request.  No 
+specific speed claims are made.  Your mileage may vary.  
 
-Sample php scripts are in ./sample.  The best/quickest way to learn
-how to use the library is just to view the source to these and load 
-them in your browser
+Sample php scripts are in ./sample.  The best/quickest way to learn how to 
+use the library is just to view the source to these and load them in your 
+browser 
 
 It is the author's hope that this code will be found useful by someone, 
 and would like to hear about how and where it is being used, or 

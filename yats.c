@@ -926,7 +926,7 @@ int add_val(parsed_file *f, char* var_id, pval* arg) {
 }
 
 /* Interpolate tokens and variables.  Recursive */
-int fill_buf(parsed_file* f, yatsstring* buf, simple_list* tokens, HashTable* attrs, int bLoop, int row) {
+int fill_buf(parsed_file* f, yatsstring* buf, simple_list* tokens, HashTable* attrs, int bLoop, int row, int max_rows) {
    int num_rows = 1;
    int bSuccess = SUCCESS;
    char** attr;
@@ -965,6 +965,9 @@ int fill_buf(parsed_file* f, yatsstring* buf, simple_list* tokens, HashTable* at
                if ( (num_elem > bRepeatScalar )  && (num_elem < num_rows || num_rows <= 1)) {
                   num_rows = num_elem;
                }
+               if( max_rows >= 0 && num_rows > max_rows ) {
+                   num_rows = max_rows;
+               }
 
                /* look up value at index */
                if (zend_hash_index_find((*res)->value.ht, idx, (void**)&res2) == SUCCESS && (*res2)->type == IS_STRING) {
@@ -1001,11 +1004,15 @@ int fill_buf(parsed_file* f, yatsstring* buf, simple_list* tokens, HashTable* at
                /* Found a section.  Recurse */
                int bParentLoop = 0;
                int bHidden = 0, bRowState = 0;
+               int i_max_rows = -1;
                if (tok->attrs) {
                   if (zend_hash_find(tok->attrs, "parentloop", strlen("parentloop") + 1, (void**)&attr) == SUCCESS) {
                      if(!strcmp((*attr), "yes")) {
                         bParentLoop = 1;
                      }
+                  }
+                  if (zend_hash_find(tok->attrs, "maxloops", strlen("maxloops") + 1, (void**)&attr) == SUCCESS) {
+                     i_max_rows = atoi( *attr );
                   }
                   // initially set to -1. (meaning unset)  after oscillates between 0,1
                   if( !sec_ops || sec_ops->bHiddenAll == -1 ) {
@@ -1022,10 +1029,10 @@ int fill_buf(parsed_file* f, yatsstring* buf, simple_list* tokens, HashTable* at
                }
                if( bHidden == 0 ) {
                   if(bParentLoop) {
-                     bSuccess = fill_buf(f, &my_buf, tok->section, tok->attrs, 0, row);
+                     bSuccess = fill_buf(f, &my_buf, tok->section, tok->attrs, 0, row, i_max_rows);
                   }
                   else {
-                     bSuccess = fill_buf(f, &my_buf, tok->section, tok->attrs, 1, 0);
+                     bSuccess = fill_buf(f, &my_buf, tok->section, tok->attrs, 1, 0, i_max_rows);
                   }
                   if(bSuccess == FAILURE) {
                      break;
@@ -1064,7 +1071,7 @@ int fill_buf(parsed_file* f, yatsstring* buf, simple_list* tokens, HashTable* at
                      simple_list* section = parse_buf( localized_text_copy, CACHE_TEMPLATES_BOOL );
                      free( localized_text_copy );
 
-                     bSuccess = fill_buf(f, &my_buf, section, tok->attrs, 0, row);
+                     bSuccess = fill_buf(f, &my_buf, section, tok->attrs, 0, row, 1);
                      if(bSuccess == FAILURE) {
                         break;
                      }
@@ -1289,7 +1296,7 @@ PHP_FUNCTION(yats_getbuf) {
           }
       }
 
-      if (fill_buf(f, &buf, f->tokens, NULL, 1, 0) == SUCCESS) {
+      if (fill_buf(f, &buf, f->tokens, NULL, 1, 0, 1) == SUCCESS) {
          RETVAL_STRING(buf.str, 0 ); /* do not duplicate */
       }
       if( origlocale ) {

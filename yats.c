@@ -405,8 +405,10 @@ void yatsstring_init(yatsstring* string) {
 
 /* clear contents of string. does not free memory */
 void yatsstring_clear(yatsstring* string) {
-   string->str = 0;
-   string->len = 0;
+   if(string->len && string->str) {
+      string->str[0] = 0;
+      string->len = 0;
+   }
 }
 
 /* release resources for string */
@@ -420,6 +422,7 @@ void yatsstring_free(yatsstring* string) {
 void yatsstring_addn(yatsstring* string, char* add, int add_len) {
    if (add && add_len) {
       if (string->len + add_len + 1 > string->size) {
+
          /* newsize is current length + new length */
          int newsize = string->len + add_len + 1;
 
@@ -1097,13 +1100,9 @@ PHP_FUNCTION(yats_define)
 }
 
 /* PHP API: interpolate and return buffer */
-PHP_FUNCTION(yats_getbuf)
-{
+PHP_FUNCTION(yats_getbuf) {
    pval *arg;
    parsed_file* f;
-
-   yatsstring buf;
-   yatsstring_init(&buf);
 
    RETVAL_FALSE;
 
@@ -1114,19 +1113,16 @@ PHP_FUNCTION(yats_getbuf)
    /* validate yats arg */
    f = (parsed_file*)arg->value.lval;
    if (f && f->isValid == 1) {
+      yatsstring buf;
+      yatsstring_init(&buf);
+
       if (fill_buf(f, &buf, f->tokens, NULL, 1, 0) == SUCCESS) {
-         RETVAL_STRING(buf.str, 0); /* do not duplicate */
+         RETVAL_STRING(buf.str, 0 ); /* do not duplicate */
       }
-   } else {
+   }
+   else {
       zend_error(E_ERROR,"Invalid template object passed as param 1 for %s()",get_active_function_name());
    }
-
-   /* This will be free'd by PHP since it was allocated with emalloc.
-    * We don't free it here because we didn't make a copy for
-    * the return value. A copy would be cleaner, but slower.
-    *
-    yatsstring_free(&buf);
-    */
 
    return;
 }

@@ -91,6 +91,7 @@ class TemplateMgr {
     var $mBlockHandles        = array();  // Array of template 'handles'
     var $mBlockKeys           = array();  // Array of template keys and vals indexed to handles.
     var $mGlobalAssignArray   = array();  // Array of Global Key/Val pairs
+    var $mGlobalHideSectionArray = array(); // Array of global sections to hide.
 
 // PUBLIC METHODS 
 
@@ -107,6 +108,10 @@ class TemplateMgr {
     {
         $this->set_root($path);
     }
+
+    function get_root() {
+       return $this->mPath;
+    }
     
     /**
      * Define a template and pass in the global styles
@@ -119,11 +124,40 @@ class TemplateMgr {
      */
     function define($handle, $template)
     {
-        $this->mBlockHandles[$handle] = tmpl_define($this->mPath . $template);
+        $this->mBlockHandles[$handle] = yats_define($this->mPath . $template);
 
-        tmpl_assign($this->mBlockHandles[$handle], $this->mGlobalAssignArray);
+        yats_assign($this->mBlockHandles[$handle], $this->mGlobalAssignArray);
+
+        foreach($this->mGlobalHideSectionArray as $key => $hidden) {
+           yats_hide($this->mBlockHandles[$handle], $key, $hidden);
+        }
 
         $this->mBlockKeys = array($handle => array());
+    }
+
+    /**
+     * UnDefine a previously defined template
+     *
+     * @param handle    A string.
+     *                  The name of the handle a previously defined template.
+     */
+    function undefine($handle)
+    {
+        unset($this->mBlockHandles[$handle]);
+    }
+
+    /**
+     * UnDefine all previously defined templates, keys, and assigns
+     *
+     * This can be useful when an error condition is encountered late
+     * in the application, and it is necessary to display an error
+     * page instead of the previously defined templates.
+     */
+    function reset()
+    {
+        $this->mBlockHandles        = array();
+        $this->mBlockKeys           = array();
+        $this->mGlobalAssignArray   = array();
     }
 
     /**
@@ -162,11 +196,11 @@ class TemplateMgr {
      */
     function assign($handle, $key_val_array)
     {
-        if (is_array($key_val_array)) {
+        if (is_array($key_val_array) && isset($this->mBlockHandles[$handle]) ) {
             foreach ($key_val_array as $key => $val) {
                 $this->mBlockKeys[$handle][$key] = $val;
             }
-            return tmpl_assign($this->mBlockHandles[$handle], $key_val_array);
+            return yats_assign($this->mBlockHandles[$handle], $key_val_array);
         } else {
            return FALSE;
         }
@@ -192,7 +226,7 @@ class TemplateMgr {
 
         // Propagate elements through all templates
         foreach ($this->mBlockHandles as $key => $val) {
-            tmpl_assign($val, $key_val_array);
+            yats_assign($val, $key_val_array);
         }
     }
 
@@ -237,12 +271,24 @@ class TemplateMgr {
      *                  The name of the template handle to assign values to.
      * @param section   A string.
      *                  The name of the section to hide.
+     * @param rows      An array of int or a scalar int.
+     *                  Particular rows of the parent section for which to show this section. (1 based)
      *
      * @return A boolean value of TRUE for success and FALSE for failure.
      */
-    function show_section($handle, $section)
+    function show_section($handle, $section, $rows=null)
     {
-        return tmpl_hide($this->mBlockHandles[$handle], $section, 0);
+       return $this->show_section_worker($handle, $section, $rows, 1);
+    }
+
+    function global_show_section($section, $rows=null, $ignored_array=null ) 
+    {
+       foreach($this->mBlockHandles as $key => $handle) {
+          if(!is_array($ignored_array) || !in_array($key, $ignored_array)) {
+             $this->show_section_worker($key, $section, $rows, 1);
+          }
+       }
+       $this->mGlobalHideSectionArray[$section] = false;
     }
 
     /**
@@ -257,12 +303,25 @@ class TemplateMgr {
      *                  The name of the template handle to assign values to.
      * @param section   A string.
      *                  The name of the section to hide.
+     * @param rows      An array of int or a scalar int.
+     *                  Particular rows of the parent section for which to hide this section. (1 based)
+     *                  
      *
      * @return A boolean value of TRUE for success and FALSE for failure.
      */
-    function hide_section($handle, $section)
+    function hide_section($handle, $section, $rows=null)
     {
-        return tmpl_hide($this->mBlockHandles[$handle], $section, 1);
+       return $this->show_section_worker($handle, $section, $rows, 0);
+    }
+
+    function global_hide_section($section, $rows=null, $ignored_array=null )
+    {
+       foreach($this->mBlockHandles as $key => $handle) {
+          if(!is_array($ignored_array) || !in_array($key, $ignored_array)) {
+             $this->show_section_worker($key, $section, $rows, 0);
+          }
+       }
+       $this->mGlobalHideSectionArray[$section] = true;
     }
 
     /**
@@ -278,7 +337,7 @@ class TemplateMgr {
      *                  The name of the template handle to parse into.
      */
     function parse($handle, $tplvar, $parent) {
-        tmpl_assign($this->mBlockHandles[$parent], $tplvar, tmpl_getbuf($this->mBlockHandles[$handle]));
+        yats_assign($this->mBlockHandles[$parent], $tplvar, yats_getbuf($this->mBlockHandles[$handle]));
     }
 
     /**
@@ -292,7 +351,7 @@ class TemplateMgr {
      */
     function global_parse($handle, $tplvar)
     {
-        $this->global_assign(array($tplvar => tmpl_getbuf($this->mBlockHandles[$handle])));
+        $this->global_assign(array($tplvar => yats_getbuf($this->mBlockHandles[$handle])));
     }
 
     /**
@@ -323,12 +382,40 @@ class TemplateMgr {
      *
      * @param handle    A string.
      *                  The name of the template handle parse.
+     * @param locale    A string.
+     *                  the locale to use for {{text}} .. {{/text}} regions in the template.
+     * @param domain    A string.
+     *                  gettext domain. If absent or null, the filename of the template will be used.
+     * @param dir       A string.
+     *                  gettext base directory. If absent or null, the directory of the template will be used.
      *
      * @return The string of HTML produced by parsing $handle.
      */
-    function parse_to_string($handle)
+    function parse_to_string($handle, $locale=null, $domain=null, $dir=null)
     {
-        return tmpl_getbuf($this->mBlockHandles[$handle]);
+        return yats_getbuf($this->mBlockHandles[$handle], $locale, $domain, $dir);
+    }
+
+    /**
+     * like parse_to_string, but iterates over all defined templates.
+     *
+     * @param ignored_array    An array
+     *                  list of defined templates to ignore
+     * @param locale    A string.
+     *                  the locale to use for {{text}} .. {{/text}} regions in the template.
+     * @param domain    A string.
+     *                  gettext domain. If absent or null, the filename of the template will be used.
+     * @param dir       A string.
+     *                  gettext base directory. If absent or null, the directory of the template will be used.
+     */
+    function global_parse_to_string($ignored_array=null, $locale=null, $domain=null, $dir=null ) {
+       $buf = '';
+       foreach($this->mBlockHandles as $key => $handle) {
+          if(!is_array($ignored_array) || !in_array($key, $ignored_array)) {
+             $buf .= yats_getbuf($handle, $locale, $domain, $dir);
+          }
+       }
+       return $buf;
     }
 
     /**
@@ -338,7 +425,7 @@ class TemplateMgr {
      */
     function count_vars($handle)
     {
-        if ($var_array = tmpl_getvars($this->mBlockHandles[$handle])) {
+        if ($var_array = yats_getvars($this->mBlockHandles[$handle])) {
             foreach ($var_array as $key => $val) {
                 $i++;
             }
@@ -373,14 +460,30 @@ class TemplateMgr {
         if ((ord($trailer)) != 47) {
             $root = "$root". chr(47);
         }
-        
+
         if (is_dir($root)) {
             $this->mPath = $root;
         } else {
             $this->mPath = "";
         }
     }
+
+    /* private method. interface may change */
+    function show_section_worker($handle, $section, $rows, $show) {
+       if(is_array($rows)) {
+          foreach($rows as $row) {
+             yats_hide($this->mBlockHandles[$handle], $section, !$show, $row);
+          }
+          return true;
+       }
+       else if($rows) {
+          return yats_hide($this->mBlockHandles[$handle], $section, !$show, $rows);
+       }
+       else {
+          return yats_hide($this->mBlockHandles[$handle], $section, !$show);
+       }
+    }
+
 }
 
 ?>
-

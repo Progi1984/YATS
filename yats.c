@@ -486,6 +486,11 @@ HashTable* parse_attrs(char* token, int bPerm) {
                      if(*p && *p == '"') {
                         value = bPerm ? (char*)zend_strndup(value, p - value) : estrndup(value, p - value);
                      }
+                     else {
+                        // missing the trailing quote.
+                        value = 0;
+                        bSuccess = FAILURE;
+                     }
                   }
                }
             }

@@ -685,7 +685,7 @@ int release_file_perm(void** f) {
 }
 
 typedef struct _per_request_section_options {
-   int bHiddenAll;
+   signed int bHiddenAll;
    HashTable* hiddenRows;
 } per_request_section_options;
 
@@ -780,6 +780,7 @@ per_request_section_options* getSectionOptions(HashTable* section_hash, char* id
 
          if(sec_ops) {
             sec_ops->hiddenRows = 0;
+            sec_ops->bHiddenAll = -1;  // initial state.
 
             zend_hash_update(section_hash, id, id_len+1, (void *)&sec_ops, sizeof(per_request_section_options *), NULL);
          }
@@ -905,7 +906,7 @@ int fill_buf(parsed_file* f, yatsstring* buf, simple_list* tokens, HashTable* at
                    zend_hash_find(tok->attrs, "alt", strlen("alt") + 1, (void**)&attr) == SUCCESS) {
                   yatsstring_add(&my_buf, (*attr));
                }
-               /* otherwise, don't show this section, unless autohide="no" is specified. */
+               /* otherwise, don't show this section if autohide="yes" is specified. */
                else {
                   int bClear = 0;
                   if (attrs) {
@@ -923,24 +924,35 @@ int fill_buf(parsed_file* f, yatsstring* buf, simple_list* tokens, HashTable* at
             }
          } else if (tok->type == section) {
             per_request_section_options* sec_ops = getSectionOptions(f->section_options, tok->buf, strlen(tok->buf), 0);
-            if (!sec_ops || (!section_hidden_for_row(sec_ops, row+1) && !sec_ops->bHiddenAll )) {
+            if (!sec_ops || (!section_hidden_for_row(sec_ops, row+1) && sec_ops->bHiddenAll < 1 )) {
                /* Found a section.  Recurse */
                int bParentLoop = 0;
+               int bHidden = 0;
                if (tok->attrs) {
                   if (zend_hash_find(tok->attrs, "parentloop", strlen("parentloop") + 1, (void**)&attr) == SUCCESS) {
                      if(!strcmp((*attr), "yes")) {
                         bParentLoop = 1;
                      }
                   }
+                  // initially set to -1. (meaning unset)  after oscillates between 0,1
+                  if( !sec_ops || sec_ops->bHiddenAll == -1 ) {
+                     if (zend_hash_find(tok->attrs, "hidden", strlen("hidden") + 1, (void**)&attr) == SUCCESS) {
+                        if(!strcmp((*attr), "yes")) {
+                           bHidden = 1;
+                        }
+                     }
+                  }
                }
-               if(bParentLoop) {
-                  bSuccess = fill_buf(f, &my_buf, tok->section, tok->attrs, 0, row);
-               }
-               else {
-                  bSuccess = fill_buf(f, &my_buf, tok->section, tok->attrs, 1, 0);
-               }
-               if(bSuccess == FAILURE) {
-                  break;
+               if( bHidden == 0 ) {
+                  if(bParentLoop) {
+                     bSuccess = fill_buf(f, &my_buf, tok->section, tok->attrs, 0, row);
+                  }
+                  else {
+                     bSuccess = fill_buf(f, &my_buf, tok->section, tok->attrs, 1, 0);
+                  }
+                  if(bSuccess == FAILURE) {
+                     break;
+                  }
                }
             }
          } else {

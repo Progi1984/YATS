@@ -27,7 +27,7 @@ danger of this becoming another "language within a language".
 
 4) internationalization. (i18n, l10n)
 
-YATS >= 0.9.3 supports the GNU gettext library/tools and utilizes special tags to mark
+YATS >= 0.93 supports the GNU gettext library/tools and utilizes special tags to mark
 certain content for inclusion in the translation catalog. This allows
 creation of a single set of HTML templates that can be used to display
 your site in multiple languages.

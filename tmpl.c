@@ -165,9 +165,19 @@ php3_module_entry tmpl_module_entry = {
 /* module description */
 PHP_MINFO_FUNCTION(tmpl)
 {
-   php_printf("tmpl: Template Support. (a.k.a. YATS -- Yet Another Template System)<br>\n"
-              "author: Dan Libby. dan@libby.com<br>\n"
-              "Epinions.com<br>\n");
+   php_info_print_table_start();
+   php_info_print_table_header(1, "YATS -- Yet Another Template System");
+   php_info_print_table_end();
+   
+   php_info_print_table_start();
+   php_info_print_table_row(2, "author", "Dan Libby");
+   php_info_print_table_row(2, "homepage", "http://yats.sourceforge.net");
+   php_info_print_table_row(2, "open sourced by", "Epinions.com");
+   php_info_print_table_end();
+
+   /* Remove comments if you have entries in php.ini
+   DISPLAY_INI_ENTRIES();
+   */
 }
 
 void char_ptr_dtor_free(char** val) {

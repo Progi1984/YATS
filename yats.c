@@ -775,26 +775,44 @@ per_request_section_options* getSectionOptions(HashTable* section_hash, char* id
 }
 
 
-/* add a key/value pair to file.  */
-int add_val(parsed_file *f, char* var_id, pval* arg) {
-   pval *res, *tmp;
+int add_arg(pval *res, pval* arg) {
+   pval* tmp;
 
-   MAKE_STD_ZVAL(res);
-
-   if (res && array_init(res) != FAILURE) {
-      if (arg->type == IS_ARRAY) {
-         zend_hash_copy(res->value.ht, arg->value.ht, (void (*)(void *)) zval_add_ref, (void *) &tmp, sizeof(zval *));
-      } else {
-         convert_to_string(arg);
-         if (!arg->value.str.val || (add_next_index_string(res, arg->value.str.val, 1) == FAILURE)) {
-            return FAILURE;
-         }
-      }
-      if (zend_hash_update(f->assigned_vars->value.ht, var_id, strlen(var_id)+1, (void *)&res, sizeof(pval *), NULL) == SUCCESS) {
-         return SUCCESS;
+   if (arg->type == IS_ARRAY) {
+      zend_hash_merge(res->value.ht, arg->value.ht, (void (*)(void *)) zval_add_ref, (void *) &tmp, sizeof(zval *), 1);
+   } else {
+      convert_to_string(arg);
+      if (!arg->value.str.val || (add_next_index_string(res, arg->value.str.val, 1) == FAILURE)) {
+         return FAILURE;
       }
    }
-   return FAILURE;
+   return SUCCESS;
+}
+
+/* add a key/value pair to file.  */
+int add_val(parsed_file *f, char* var_id, pval* arg) {
+   pval *res, **pres;
+   int bSuccess = FAILURE;
+
+   if (zend_hash_find(f->assigned_vars->value.ht, var_id, strlen(var_id)+1, (void**)&pres) == SUCCESS) {
+      if( (*pres)->type == IS_ARRAY) {
+         bSuccess = add_arg( *pres, arg);
+      }
+   }
+
+   else {
+      MAKE_STD_ZVAL(res);
+      if (res && array_init(res) != FAILURE) {
+         if(add_arg(res, arg) == SUCCESS) {
+            if (zend_hash_update(f->assigned_vars->value.ht, var_id, strlen(var_id)+1, (void *)&res, sizeof(pval *), NULL) == SUCCESS) {
+               bSuccess = SUCCESS;
+            }
+         }
+      }
+   }
+
+
+   return bSuccess;
 }
 
 /* Interpolate tokens and variables.  Recursive */

@@ -175,11 +175,11 @@ zend_module_entry yats_module_entry = {
    PHP_RINIT(yats),                  /* request startup */
    PHP_RSHUTDOWN(yats),              /* request shutdown */
    PHP_MINFO(yats),                  /* extension info */
+#if ZEND_MODULE_API_NO >= 20010901
+   YATS_VERSION,                     /* extension version number (string) */
+#endif
    NULL,                             /* global startup function */
    NULL,                             /* global shutdown function */
-#if ZEND_MODULE_API_NO >= 20010901
-   YATS_VERSION,                   /* extension version number (string) */
-#endif
    STANDARD_MODULE_PROPERTIES_EX
 };
 

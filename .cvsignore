@@ -1,0 +1,5 @@
+Makefile
+.deps
+tmpl.lo
+.libs
+libtmpl.la

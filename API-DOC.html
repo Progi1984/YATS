@@ -1,0 +1,38 @@
+<!-- API-DOC.html is generated from API-DOC.php.  Do not edit the html file directly --><html><head><title>xmlrpc-epi-php API reference</title></head><body><h1>tmpl API</h1><ul><li><a href='#tmpl_define'>tmpl_define</a>
+<li><a href='#tmpl_assign'>tmpl_assign</a>
+<li><a href='#tmpl_getbuf'>tmpl_getbuf</a>
+<li><a href='#tmpl_hide'>tmpl_hide</a>
+<li><a href='#tmpl_getvars'>tmpl_getvars</a>
+</ul>
+ <h3><a name='tmpl_define'>handle tmpl_define(string filename)</a></h3>
+ <blockquote>
+ load (and parse) a template
+ <p>
+ <b>returns:</b> template handle, or false if error
+ <p><b>args:</b></br><blockquote><b>filename:</b> path/filename of the template to be loaded<br></blockquote><br><br></blockquote>
+ <h3><a name='tmpl_assign'>bool tmpl_assign(handle template, string key, mixed value) -- or --<br>bool tmpl_assign(handle template, array vars)</a></h3>
+ <blockquote>
+ assign php variable(s) into template namespace for potential use
+ <p>
+ <b>returns:</b> true on success, else false
+ <p><b>args:</b></br><blockquote><b>template:</b> template handle, as returned from tmpl_define()<br><b>key:</b> variable name<br><b>value:</b> variable value (scalar)<br><b>vars:</b> list of variable name/value pairs.  error if value without matching key is found.<br></blockquote><br><br></blockquote>
+ <h3><a name='tmpl_getbuf'>string tmpl_getbuf(handle template)</a></h3>
+ <blockquote>
+ inserts assigned variables into template as appropriate and returns buffer
+ <p>
+ <b>returns:</b> buffer containing fully processed template output
+ <p><b>args:</b></br><blockquote><b>template:</b> template handle, as returned from tmpl_define()<br></blockquote><br><br></blockquote>
+ <h3><a name='tmpl_hide'>bool tmpl_hide(handle template, bool hide)</a></h3>
+ <blockquote>
+ sets hidden state of a named template section
+ <p>
+ <b>returns:</b> true on success, else false
+ <p><b>args:</b></br><blockquote><b>template:</b> template handle, as returned from tmpl_define()<br><b>hide:</b> if true, hides the section, else displays it<br></blockquote><br><br></blockquote>
+ <h3><a name='tmpl_getvars'>array tmpl_getvars(handle template)</a></h3>
+ <blockquote>
+ returns list of variable names/values assigned to template thus far
+ <p>
+ <b>returns:</b> array on success, else false
+ <p><b>args:</b></br><blockquote><b>template:</b> template handle, as returned from tmpl_define()<br></blockquote><br><br></blockquote>
+</blockquote>
+</html>

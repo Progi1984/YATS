@@ -1,0 +1,7 @@
+# $Id: Makefile.in,v 1.1 2001/06/28 19:14:32 danda Exp $
+
+LTLIBRARY_NAME        = libtmpl.la
+LTLIBRARY_SOURCES     = tmpl.c
+LTLIBRARY_SHARED_NAME = tmpl.la
+
+include $(top_srcdir)/build/dynlib.mk

@@ -39,7 +39,7 @@
 #include "modules.h"
 #endif
 
-extern php3_module_entry yats_module_entry;
+extern zend_module_entry yats_module_entry;
 #define yats_module_ptr &yats_module_entry
 
 PHP_MINFO_FUNCTION(yats);

@@ -1047,21 +1047,29 @@ int fill_buf(parsed_file* f, yatsstring* buf, simple_list* tokens, HashTable* at
 
              char* localized_text = gettext( tok->buf );
 
-             if( !bParse ) {
-                 // If no parsing is requested, then we can just add the text and we are done.  yay!
-                 yatsstring_add(&my_buf, localized_text );
-             }
-             else {
-                 // In order to do variable replacement within the l10n text
-                 // we need to do more complicated processing.
-                 simple_list* section = parse_buf( localized_text, CACHE_TEMPLATES_BOOL );
+             if( localized_text ) {  // should always be true
 
-                 bSuccess = fill_buf(f, &my_buf, section, tok->attrs, 0, row);
-                 if(bSuccess == FAILURE) {
-                    break;
+                 if( !bParse ) {
+                     // If no parsing is requested, then we can just add the text and we are done.  yay!
+                     yatsstring_add(&my_buf, localized_text );
+                 }
+                 else {
+                     // In order to do variable replacement within the l10n text
+                     // we need to do more complicated processing.
+                     
+                     // A copy is necessary as gettext returns a statically allocated string
+                     // and parse_buf modifies the input string temporarily.  Fixing parse_buf
+                     // would be another option.
+                     char* localized_text_copy = strdup( localized_text );
+                     simple_list* section = parse_buf( localized_text_copy, CACHE_TEMPLATES_BOOL );
+                     free( localized_text_copy );
+
+                     bSuccess = fill_buf(f, &my_buf, section, tok->attrs, 0, row);
+                     if(bSuccess == FAILURE) {
+                        break;
+                     }
                  }
              }
-
          }
          else {
             /* Found an oddity. Complain */

@@ -36,11 +36,12 @@
 #include "php_ini.h"
 
 #include <libintl.h>
+#include <locale.h>
 #include <sys/stat.h>
 
 
 /* poor man's package version system. auto* is friggin _hard_  */
-#define YATS_VERSION "0.92"
+#define YATS_VERSION "0.93"
 
 #ifdef COMPILE_DL_YATS
 ZEND_GET_MODULE(yats)
@@ -217,7 +218,8 @@ void char_ptr_dtor_efree(char** val) {
 typedef enum {
    variable,
    string,
-   section
+   section,
+   gettext_
 } token_type;
 
 typedef struct _simple_list_obj {
@@ -459,6 +461,9 @@ void yatsstring_add(yatsstring* string, char* add) {
 * Begin Parsing Functions *
 **************************/
 
+// This parsing code is nasty. It is fairly efficient, but could be made more so, and
+// more maintainable using a real parsing engine / state machine.
+
 /* Parse attributes of a token.
  * examp input:
  *   key="val"  key2 =  "val2"
@@ -523,6 +528,8 @@ HashTable* parse_attrs(char* token, int bPerm) {
 
 #define TOKEN_START "{{"
 #define TOKEN_END "}}"
+#define TOKEN_GETTEXT "text"
+
 /* parse a buffer/section.  recursive */
 simple_list* parse_buf(char* buf, int bPerm) {
    simple_list* tokens = simple_list_new(bPerm);
@@ -531,6 +538,7 @@ simple_list* parse_buf(char* buf, int bPerm) {
    char* p = strstr(start, TOKEN_START);
    int slen = strlen(TOKEN_START);
    int elen = strlen(TOKEN_END);
+   int glen = strlen(TOKEN_GETTEXT);
    
    while (p) {
       end = p - 1;
@@ -596,7 +604,34 @@ simple_list* parse_buf(char* buf, int bPerm) {
                start = end + elen + 1;
             }
             my_efree(end_token);
-         } else {
+         }
+         else if (!strncmp(start, TOKEN_GETTEXT, glen )) {
+            int end_token_len = slen + 1 + (tok_end - start + 1) + elen;
+            char* end_token = emalloc(end_token_len + 1);
+            char* sec_end = 0;
+            sprintf(end_token, "%s/%s", TOKEN_START, TOKEN_GETTEXT);
+            strncat(end_token, start + glen, tok_end - (start + glen) + 1);
+            sprintf(end_token + slen + 1 + (tok_end - start + 1), TOKEN_END);
+            sec_end = strstr(end, end_token);
+            if (sec_end) {
+               char tmp = *sec_end;
+               simple_list* sect = 0;
+               *sec_end = 0; /* null terminate string temporarily */
+
+               // We don't parse the buffer here. The token is either {{text}} or {{text parse="yes"}}.
+               // In the former case, it is never parsed at all (for performance).  In the latter, we parse it, but
+               // later, in the call to yats_getbuf(), after the localized string has been retrieved.
+               token_add(tokens, end + elen + 1, sec_end, gettext_, attrs, NULL, bPerm);
+               *sec_end = tmp; /* restore */
+
+               start = sec_end + end_token_len;
+            } else {
+               zend_error(E_ERROR,"Matching end token not found:  %s", end_token);
+               start = end + elen + 1;
+            }
+            my_efree(end_token);
+         }
+         else {
             token_add(tokens, start, tok_end, variable, attrs, NULL, bPerm);
             start = end + elen + 1;
 
@@ -624,6 +659,8 @@ simple_list* parse_buf(char* buf, int bPerm) {
 **********************************/
 
 typedef struct _parsed_file {
+   char* filepath;
+   char* dir;
    char* filename;
    char* buf;
    simple_list* tokens;
@@ -635,14 +672,23 @@ typedef struct _parsed_file {
 
 
 /* load a file */
-parsed_file* get_file(const char* filename, int file_len, int bPerm) {
+parsed_file* get_file(const char* filepath, int file_len, int bPerm) {
    parsed_file* res = 0;
-   FILE* f = fopen(filename, "r");
+   FILE* f = fopen(filepath, "r");
    if (f) {
       char* buf;
       res = pecalloc(1, sizeof(parsed_file), bPerm);
 
-      res->filename = pestrdup(filename, bPerm);
+      res->dir = pestrdup(filepath, bPerm);
+      char* p = strrchr( res->dir, '/');
+      if( p ) {
+          if( *p != 0 ) {
+              res->filename = pestrdup( p + 1, bPerm );
+          }
+          *p = 0;
+      }
+
+      res->filepath = pestrdup(filepath, bPerm);
       buf = emalloc(file_len + 1);
 
       fread(buf, 1, file_len, f);
@@ -653,7 +699,7 @@ parsed_file* get_file(const char* filename, int file_len, int bPerm) {
       res->tokens = parse_buf(buf, bPerm);
       my_efree(buf);
    } else {
-      zend_error(E_WARNING,"Unable to open template %s", filename);
+      zend_error(E_WARNING,"Unable to open template %s", filepath);
    }
    return res;
 }
@@ -683,8 +729,14 @@ int release_request_data(void** file) {
 /* Releases file resources */
 int release_file(parsed_file* f, int bPerm) {
    if (f) {
-      if (f->filename) {
-         my_pefree(f->filename, bPerm);
+      if (f->filepath) {
+         my_pefree(f->filepath, bPerm);
+      }
+      if( f->dir ) {
+         my_pefree( f->dir, bPerm );
+      }
+      if( f->filename ) {
+         my_pefree( f->filename, bPerm );
       }
       if (f->tokens) {
          token_list_destroy(f->tokens, bPerm);
@@ -737,22 +789,22 @@ void per_req_init(parsed_file* f) {
 }
 
 /* Retrieves file. Uses cached version if available, unless timestamp newer */
-parsed_file* get_file_possibly_cached(char* filename) {
+parsed_file* get_file_possibly_cached(char* filepath) {
    struct stat statbuf;
    parsed_file* f = 0;
 
-   if (!stat(filename, &statbuf)) {
+   if (!stat(filepath, &statbuf)) {
       /* see if we already have parsed file stored */
       if (YATS_GLOBALS(yats_hash)) {
          parsed_file** f2;
-         if (zend_hash_find(YATS_GLOBALS(yats_hash), filename, strlen(filename) + 1, (void**)&f2) == SUCCESS) {
+         if (zend_hash_find(YATS_GLOBALS(yats_hash), filepath, strlen(filepath) + 1, (void**)&f2) == SUCCESS) {
             if (f2) {
                if (statbuf.st_mtime <= (*f2)->mtime) {
                   per_req_init(*f2);
                   return *f2;
                } else {
                   /* out of date.  release */
-                  zend_hash_del_key_or_index(YATS_GLOBALS(yats_hash), filename, strlen(filename) +1, 0, HASH_DEL_KEY);
+                  zend_hash_del_key_or_index(YATS_GLOBALS(yats_hash), filepath, strlen(filepath) +1, 0, HASH_DEL_KEY);
                   /* release_file(*f2, CACHE_TEMPLATES_BOOL); */
                }
             }
@@ -765,14 +817,14 @@ parsed_file* get_file_possibly_cached(char* filename) {
          }
       }
 
-      f = get_file(filename, statbuf.st_size, CACHE_TEMPLATES_BOOL);
+      f = get_file(filepath, statbuf.st_size, CACHE_TEMPLATES_BOOL);
       if (f) {
          f->mtime = statbuf.st_mtime;
          per_req_init(f);
-         zend_hash_update(YATS_GLOBALS(yats_hash), filename, strlen(filename)+1, &f, sizeof(parsed_file*), NULL);
+         zend_hash_update(YATS_GLOBALS(yats_hash), filepath, strlen(filepath)+1, &f, sizeof(parsed_file*), NULL);
       }
    } else {
-      zend_error(E_WARNING,"template not found: %s", filename);
+      zend_error(E_WARNING,"template not found: %s", filepath);
    }
    return f;
 }
@@ -980,7 +1032,38 @@ int fill_buf(parsed_file* f, yatsstring* buf, simple_list* tokens, HashTable* at
                   }
                }
             }
-         } else {
+         }
+         else if( tok->type == gettext_ ) {
+
+             int bParse = 0;
+
+             if (tok->attrs) {
+                if (zend_hash_find(tok->attrs, "parse", strlen("parse") + 1, (void**)&attr) == SUCCESS) {
+                   if(!strcmp((*attr), "yes")) {
+                      bParse = 1;
+                   }
+                }
+             }
+
+             char* localized_text = gettext( tok->buf );
+
+             if( !bParse ) {
+                 // If no parsing is requested, then we can just add the text and we are done.  yay!
+                 yatsstring_add(&my_buf, localized_text );
+             }
+             else {
+                 // In order to do variable replacement within the l10n text
+                 // we need to do more complicated processing.
+                 simple_list* section = parse_buf( localized_text, CACHE_TEMPLATES_BOOL );
+
+                 bSuccess = fill_buf(f, &my_buf, section, tok->attrs, 0, row);
+                 if(bSuccess == FAILURE) {
+                    break;
+                 }
+             }
+
+         }
+         else {
             /* Found an oddity. Complain */
             zend_error(E_ERROR,"Unknown token type:  %s", tok->buf);
             bSuccess = FAILURE;
@@ -1087,7 +1170,7 @@ PHP_FUNCTION(yats_assign)
  */
 PHP_FUNCTION(yats_define)
 {
-   char *filename;
+   char *filepath;
    pval* arg;
    parsed_file* f;
 
@@ -1097,9 +1180,9 @@ PHP_FUNCTION(yats_define)
 
    /* validate yats arg */
    convert_to_string(arg);
-   filename = arg->value.str.val;
+   filepath = arg->value.str.val;
 
-   f = get_file_possibly_cached(filename);
+   f = get_file_possibly_cached(filepath);
    if (!f) {
       /* error getting data from server */
       RETURN_FALSE; 
@@ -1109,24 +1192,100 @@ PHP_FUNCTION(yats_define)
 }
 
 /* PHP API: interpolate and return buffer */
+
+// yats_getbuf( parsed_file, [locale, [gettext_domain, [gettext_dir]]] ) 
 PHP_FUNCTION(yats_getbuf) {
-   pval *arg;
+   pval *arg1, *arg2 = NULL, *arg3 = NULL, *arg4 = NULL;
    parsed_file* f;
 
    RETVAL_FALSE;
 
-   if (ARG_COUNT(ht) != 1 || getParameters(ht, 1, &arg) == FAILURE) {
+   if (ARG_COUNT(ht) == 1 ) {
+      if( getParameters(ht, 1, &arg1) == FAILURE ) {
+          WRONG_PARAM_COUNT; /* prints/logs a warning and returns */
+      }
+   }
+   else if (ARG_COUNT(ht) == 2 ) {
+      if( getParameters(ht, 2, &arg1, &arg2) == FAILURE ) {
+          WRONG_PARAM_COUNT; /* prints/logs a warning and returns */
+      }
+   }
+   else if (ARG_COUNT(ht) == 3 ) {
+      if( getParameters(ht, 3, &arg1, &arg2, &arg3) == FAILURE ) {
+          WRONG_PARAM_COUNT; /* prints/logs a warning and returns */
+      }
+   }
+   else if (ARG_COUNT(ht) != 4 || getParameters(ht, 4, &arg1, &arg2, &arg3, &arg4) == FAILURE) {
       WRONG_PARAM_COUNT; /* prints/logs a warning and returns */
    }
 
+
    /* validate yats arg */
-   f = (parsed_file*)arg->value.lval;
+   f = (parsed_file*)arg1->value.lval;
    if (f && f->isValid == 1) {
       yatsstring buf;
       yatsstring_init(&buf);
 
+      char* origlocale = NULL;
+
+      /* arg2, arg3, and arg4 are gettext related */
+      if( arg2 ) {
+          convert_to_string(arg2);
+          if( arg2->value.str.len ) {
+              char* plocale = arg2->value.str.val;
+              char* pdomain = f->filename;
+              char* pdir = f->dir;
+
+              if( arg3 ) {
+                  convert_to_string( arg3 );
+                  if( arg3->value.str.len ) {
+                      pdomain = arg3->value.str.val;
+                  }
+              }
+              if( arg4 ) {
+                  convert_to_string( arg4 );
+                  if( arg4->value.str.len ) {
+                      pdir = arg4->value.str.val;
+                  }
+              }
+
+              // Store the original locale, so we can restore it after. Do not store if same as requested locale.
+              origlocale = setlocale( LC_MESSAGES, NULL );
+              origlocale = origlocale == plocale ? NULL : origlocale;
+
+              // this loop allows caller to pass in multiple locales in order of preference, 
+              // and we will use the first one that setlocale will accept.
+              char* start = plocale;
+              char* end = strchr( plocale, ' ');
+              if( end ) {
+                  while(start && end) {
+                      *end = 0;
+                      if( setlocale( LC_MESSAGES, start ) != NULL ) {
+                          break;
+                      }
+                      start = end + 1;
+                      end = strchr( start, ' ' );
+                  }
+              }
+              else {
+                  setlocale( LC_MESSAGES, plocale );
+              }
+
+              // setlocale( LC_MESSAGES, plocale );
+              // setenv( "LANG", "foobar", 1 );
+              // setenv( "LANGUAGE", plocale, 1 );
+              // setlocale( LC_MESSAGES, "" );
+            
+              bindtextdomain( pdomain, pdir );
+              textdomain( pdomain );
+          }
+      }
+
       if (fill_buf(f, &buf, f->tokens, NULL, 1, 0) == SUCCESS) {
          RETVAL_STRING(buf.str, 0 ); /* do not duplicate */
+      }
+      if( origlocale ) {
+          setlocale( LC_MESSAGES, origlocale );
       }
    }
    else {

@@ -41,7 +41,7 @@
 
 
 /* poor man's package version system. auto* is friggin _hard_  */
-#define YATS_VERSION "0.95"
+#define YATS_VERSION "0.96"
 
 #ifdef COMPILE_DL_YATS
 ZEND_GET_MODULE(yats)

@@ -1,3 +1,21 @@
+2005-05-03 23:09  danda
+
+	* utils/class.TemplateMgr.php: Adding support for template
+	  includes. also includes modifications to the gettext interface
+
+2005-05-03 23:07  danda
+
+	* API-DOC.html, API-DOC.php, README.html, yats.c: Adding support
+	  for template includes
+
+2005-02-16 21:17  danda
+
+	* README.html, yats.c: add maxloops attribute to sections
+
+2004-11-16 09:29  danda
+
+	* ChangeLog: update ChangeLog
+
 2004-11-16 09:05  danda
 
 	* README, README.html: 0.9.3 => 0.93

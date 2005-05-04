@@ -92,6 +92,10 @@ class TemplateMgr {
     var $mBlockKeys           = array();  // Array of template keys and vals indexed to handles.
     var $mGlobalAssignArray   = array();  // Array of Global Key/Val pairs
     var $mGlobalHideSectionArray = array(); // Array of global sections to hide.
+    
+    var $default_locale;
+    var $default_domain;
+    var $default_dir;
 
 // PUBLIC METHODS 
 
@@ -113,6 +117,17 @@ class TemplateMgr {
        return $this->mPath;
     }
     
+    function setupGetText( $locale, $domain, $dir ) {
+      $this->default_locale = $locale;
+      $this->default_domain = $domain;
+      $this->default_dir = $dir;
+    }
+    
+    function cloneSettings( $tpl ) {
+      $this->set_root( $tpl->get_root() );
+      $this->setupGetText( $tpl->default_locale, $tpl->default_domain, $tpl->default_dir );
+    }
+    
     /**
      * Define a template and pass in the global styles
      *
@@ -124,7 +139,7 @@ class TemplateMgr {
      */
     function define($handle, $template)
     {
-        $this->mBlockHandles[$handle] = yats_define($this->mPath . $template);
+        $this->mBlockHandles[$handle] = yats_define($this->mPath . $template, $this->get_root() );
 
         yats_assign($this->mBlockHandles[$handle], $this->mGlobalAssignArray);
 
@@ -145,6 +160,18 @@ class TemplateMgr {
     {
         unset($this->mBlockHandles[$handle]);
     }
+
+    /**
+     * Indicates if a handle has previously been defined or not.
+     *
+     * @param handle    A string.
+     *                  The name of the handle to check
+     */
+    function is_defined($handle)
+    {
+        return isset($this->mBlockHandles[$handle]);
+    }
+
 
     /**
      * UnDefine all previously defined templates, keys, and assigns
@@ -337,7 +364,7 @@ class TemplateMgr {
      *                  The name of the template handle to parse into.
      */
     function parse($handle, $tplvar, $parent) {
-        yats_assign($this->mBlockHandles[$parent], $tplvar, yats_getbuf($this->mBlockHandles[$handle]));
+        yats_assign($this->mBlockHandles[$parent], $tplvar, yats_getbuf($this->mBlockHandles[$handle], $this->default_locale, $this->default_domain, $this->default_dir));
     }
 
     /**
@@ -351,7 +378,7 @@ class TemplateMgr {
      */
     function global_parse($handle, $tplvar)
     {
-        $this->global_assign(array($tplvar => yats_getbuf($this->mBlockHandles[$handle])));
+        $this->global_assign(array($tplvar => yats_getbuf($this->mBlockHandles[$handle], $this->default_locale, $this->default_domain, $this->default_dir)));
     }
 
     /**
@@ -382,18 +409,12 @@ class TemplateMgr {
      *
      * @param handle    A string.
      *                  The name of the template handle parse.
-     * @param locale    A string.
-     *                  the locale to use for {{text}} .. {{/text}} regions in the template.
-     * @param domain    A string.
-     *                  gettext domain. If absent or null, the filename of the template will be used.
-     * @param dir       A string.
-     *                  gettext base directory. If absent or null, the directory of the template will be used.
      *
      * @return The string of HTML produced by parsing $handle.
      */
-    function parse_to_string($handle, $locale=null, $domain=null, $dir=null)
-    {
-        return yats_getbuf($this->mBlockHandles[$handle], $locale, $domain, $dir);
+    function parse_to_string($handle)
+    { 
+        return yats_getbuf($this->mBlockHandles[$handle], $this->default_locale, $this->default_domain, $this->default_dir);
     }
 
     /**
@@ -408,11 +429,12 @@ class TemplateMgr {
      * @param dir       A string.
      *                  gettext base directory. If absent or null, the directory of the template will be used.
      */
-    function global_parse_to_string($ignored_array=null, $locale=null, $domain=null, $dir=null ) {
+    function global_parse_to_string($ignored_array=null ) {
+    
        $buf = '';
        foreach($this->mBlockHandles as $key => $handle) {
           if(!is_array($ignored_array) || !in_array($key, $ignored_array)) {
-             $buf .= yats_getbuf($handle, $locale, $domain, $dir);
+             $buf .= yats_getbuf($handle, $this->default_locale, $this->default_domain, $this->default_dir);
           }
        }
        return $buf;
@@ -448,24 +470,14 @@ class TemplateMgr {
 // PRIVATE METHODS 
 
     /**
-     * Private function for terminating paths in '/'
+     * Private function for normalizing and terminating paths in '/'
      *
      * @param root      A string.
      *                  A file path.
      */
     function set_root ($root)
     {
-        $trailer = substr($root,-1);
-        
-        if ((ord($trailer)) != 47) {
-            $root = "$root". chr(47);
-        }
-
-        if (is_dir($root)) {
-            $this->mPath = $root;
-        } else {
-            $this->mPath = "";
-        }
+        $this->mPath = realpath($root) . '/';
     }
 
     /* private method. interface may change */

@@ -1,3 +1,20 @@
+2005-05-04 07:11  danda
+
+	* API-DOC.html, API-DOC.php, README.html: search path when
+	  loading/including templates
+
+2005-05-04 07:01  danda
+
+	* yats.c: search path when loading/including templates
+
+2005-05-04 00:04  danda
+
+	* yats.c: update version
+
+2005-05-04 00:03  danda
+
+	* ChangeLog: changelog update
+
 2005-05-04 00:02  danda
 
 	* yats.c: fix: null-terminate string for included file

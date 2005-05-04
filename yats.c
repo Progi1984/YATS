@@ -41,11 +41,13 @@
 
 
 /* poor man's package version system. auto* is friggin _hard_  */
-#define YATS_VERSION "0.96"
+#define YATS_VERSION "0.97"
 
 #ifdef COMPILE_DL_YATS
 ZEND_GET_MODULE(yats)
 #endif
+
+#define max_yats_include_paths 20
 
 #if ZEND_MODULE_API_NO >= 20001222
 #define my_zend_hash_get_current_key(ht, my_key, num_index) zend_hash_get_current_key(ht, my_key, num_index, 0)
@@ -461,6 +463,52 @@ void yatsstring_add(yatsstring* string, char* add) {
 * Begin Parsing Functions *
 **************************/
 
+FILE* find_file( const char *file, const char* docroot, const char* curr_dir, char **searchpaths, char* filepath, int filepath_len, int* fsize ) {
+    struct stat statbuf;
+    int stat_rc = -1;
+
+    if( file[0] != '/' ) {
+        snprintf(filepath, filepath_len, "%s/%s", curr_dir, file );
+        stat_rc = stat(filepath, &statbuf);
+        if( stat_rc == -1 ) {
+            char** p2 = searchpaths;
+            while( *p2 && stat_rc != 0 ) {
+                snprintf(filepath, filepath_len, "%s/%s", *p2, file );
+                // zend_error(E_WARNING,"Searching for file in path: %s", filepath);
+
+                stat_rc = stat(filepath, &statbuf);
+                p2 ++;
+            }
+        }
+        if( stat_rc != 0 ) {
+            zend_error(E_ERROR,"Unable to locate file in path: %s", file);
+        }
+    }
+    else {
+        if( docroot ) {
+            snprintf(filepath, filepath_len, "%s/%s", docroot, file );
+        }
+        else {
+            strncpy( filepath, file, filepath_len );
+        }
+        stat_rc = stat(filepath, &statbuf);
+        if( stat_rc != 0 ) {
+            zend_error(E_ERROR,"Unable to locate file: %s", filepath);
+        }
+    }
+    if( stat_rc == 0 ) {
+        FILE* f = fopen(filepath, "r");
+        if ( !f ) {
+            zend_error(E_ERROR,"Unable to open file: %s", filepath);
+        }
+        else {
+            *fsize = statbuf.st_size;
+        }
+        return f;
+    }
+    return 0;
+}
+
 // This parsing code is nasty. It is fairly efficient, but could be made more so, and
 // more maintainable using a real parsing engine / state machine.
 
@@ -530,8 +578,22 @@ HashTable* parse_attrs(char* token, int bPerm) {
 #define TOKEN_END "}}"
 #define TOKEN_GETTEXT "text"
 
+typedef struct _parsed_file {
+   char* filepath;
+   char* dir;
+   char* docroot;
+   char* filename;
+   char* searchpaths[max_yats_include_paths + 1];
+   char* buf;
+   simple_list* tokens;
+   HashTable* section_options;
+   pval* assigned_vars;
+   int isValid; /* Must equal 1 exactly. */
+   time_t mtime;
+} parsed_file;
+
 /* parse a buffer/section.  recursive */
-simple_list* parse_buf(char* dir, char* docroot, char* buf, int bPerm) {
+simple_list* parse_buf(parsed_file* pf, char* dir, char* buf, int bPerm) {
    simple_list* tokens = simple_list_new(bPerm);
    char* start = buf; /* start of current token */
    char* end = 0; /* end of current token */
@@ -594,7 +656,7 @@ simple_list* parse_buf(char* dir, char* docroot, char* buf, int bPerm) {
                char tmp = *sec_end;
                simple_list* sect = 0;
                *sec_end = 0; /* null terminate string temporarily */
-               sect = parse_buf(dir, docroot, end + elen + 1, bPerm);
+               sect = parse_buf(pf, dir, end + elen + 1, bPerm);
                token_add(tokens, start + 8, tok_end, section, attrs, sect, bPerm);
                *sec_end = tmp; /* restore */
 
@@ -606,48 +668,38 @@ simple_list* parse_buf(char* dir, char* docroot, char* buf, int bPerm) {
             my_efree(end_token);
          }
          else if (!strncmp(start, "include ", 8)) {
-             if( !dir ) {
+             if( !dir || !pf ) {
                  zend_error(E_ERROR,"Evaluating dynamic content. Include not allowed here.");
              }
              else {
                  char **attr;
                  if (zend_hash_find(attrs, "file", strlen("file") + 1, (void**)&attr) == SUCCESS) {
-                    char filepath[1024];
                     char* file = *attr;
-                    char* dirbase = file[0] == '/' ? docroot : dir;
 
                     if( strstr( file, "../" ) ) {
                         zend_error(E_ERROR,"Invalid include. \"../\" is not allowed.  Included file was: %s", file);
                     }
                     else {
+                        char filepath[1024];
+                        int fsize;
 
-                        snprintf(filepath, sizeof(filepath), "%s/%s", dirbase, file );
+                        FILE* fh = find_file( file, pf->docroot, dir, pf->searchpaths, filepath, sizeof(filepath), &fsize );
 
-                        struct stat statbuf;
-                        if( stat(filepath, &statbuf) ) {
-                            zend_error(E_ERROR,"Unable to stat file: %s", filepath);
-                        }
-                        else {
-                            FILE* f = fopen(filepath, "r");
-                            if ( !f ) {
-                                zend_error(E_ERROR,"Unable to open file: %s", filepath);
-                            }
-                            else {
-                               char* buf = emalloc(statbuf.st_size + 1);
+                        if( fh ) {
+                           char* buf = emalloc(fsize + 1);
 
-                               fread(buf, 1, statbuf.st_size, f);
-                               fclose(f);
+                           fread(buf, 1, fsize, fh);
+                           fclose(fh);
 
-                               buf[statbuf.st_size] = 0;
+                           buf[fsize] = 0;
 
-                               char* d_end = strrchr( filepath, '/' );
-                               if( d_end ) {
-                                   *d_end = 0;
-                               }
-
-                               simple_list* sect = parse_buf(filepath, docroot, buf, bPerm);
-                               token_add(tokens, filepath, filepath + strlen(filepath)-1, section, attrs, sect, bPerm);
+                           char* d_end = strrchr( filepath, '/' );
+                           if( d_end ) {
+                               *d_end = 0;
                            }
+
+                           simple_list* sect = parse_buf(pf, filepath, buf, bPerm);
+                           token_add(tokens, filepath, filepath + strlen(filepath)-1, section, attrs, sect, bPerm);
                         }
                     }
                  }
@@ -710,51 +762,59 @@ simple_list* parse_buf(char* dir, char* docroot, char* buf, int bPerm) {
 * Begin File / Cacheing Functions *
 **********************************/
 
-typedef struct _parsed_file {
-   char* filepath;
-   char* dir;
-   char* docroot;
-   char* filename;
-   char* buf;
-   simple_list* tokens;
-   HashTable* section_options;
-   pval* assigned_vars;
-   int isValid; /* Must equal 1 exactly. */
-   time_t mtime; 
-} parsed_file;
-
-
 /* load a file */
-parsed_file* get_file(const char* filepath, const char* docroot, int file_len, int bPerm) {
+parsed_file* get_file(const char* filepath, const char* docroot, const char* searchpaths, int bPerm) {
    parsed_file* res = 0;
-   FILE* f = fopen(filepath, "r");
-   if (f) {
-      char* buf;
-      res = pecalloc(1, sizeof(parsed_file), bPerm);
+   char foundfilepath[1024];
+   int fsize;
 
-      res->dir = pestrdup(filepath, bPerm);
-      res->docroot = docroot ? pestrdup( docroot, bPerm) : pestrdup( res->dir, bPerm );
-      char* p = strrchr( res->dir, '/');
-      if( p ) {
-          if( *p != 0 ) {
-              res->filename = pestrdup( p + 1, bPerm );
-          }
-          *p = 0;
-      }
+   char* buf;
+   res = pecalloc(1, sizeof(parsed_file), bPerm);
 
-      res->filepath = pestrdup(filepath, bPerm);
-      buf = emalloc(file_len + 1);
-
-      fread(buf, 1, file_len, f);
-      fclose(f);
-
-      buf[file_len] = 0;
-
-      res->tokens = parse_buf(res->dir, res->docroot, buf, bPerm);
-      my_efree(buf);
-   } else {
-      zend_error(E_WARNING,"Unable to open template %s", filepath);
+   res->dir = pestrdup(filepath, bPerm);
+   char* p = strrchr( res->dir, '/');
+   if( p ) {
+       if( *p != 0 ) {
+           res->filename = pestrdup( p + 1, bPerm );
+       }
+       *p = 0;
    }
+   res->docroot = docroot ? pestrdup( docroot, bPerm) : pestrdup( res->dir, bPerm );
+
+   if( searchpaths && strlen( searchpaths ) ) {
+       char* allpaths = strdup(searchpaths);
+       char* ptr;
+       int i = 0;
+
+       char* next = strtok_r(allpaths, ":", &ptr);
+       while( next && i < max_yats_include_paths ) {
+           // zend_error(E_WARNING,"Found path: %s", next);
+
+           res->searchpaths[i] = pestrdup(next, bPerm);
+           next = strtok_r(0, ":", &ptr);
+           i ++;
+       }
+       free( allpaths );
+   }
+
+   FILE* fh = find_file( filepath, NULL, res->dir, res->searchpaths, foundfilepath, sizeof(foundfilepath), &fsize );
+
+   if( fh ) {
+       res->filepath = pestrdup(foundfilepath, bPerm);
+       buf = emalloc(fsize + 1);
+
+       fread(buf, 1, fsize, fh);
+       fclose(fh);
+
+       buf[fsize] = 0;
+
+       res->tokens = parse_buf(res, res->dir, buf, bPerm);
+       my_efree(buf);
+   }
+   else {
+       release_file( res, bPerm );
+   }
+
    return res;
 }
 
@@ -797,6 +857,10 @@ int release_file(parsed_file* f, int bPerm) {
       }
       if (f->tokens) {
          token_list_destroy(f->tokens, bPerm);
+      }
+      char** p = f->searchpaths;
+      while( p && *p ) {
+          my_pefree( *p, bPerm );
       }
       my_pefree(f, bPerm);
 
@@ -846,7 +910,7 @@ void per_req_init(parsed_file* f) {
 }
 
 /* Retrieves file. Uses cached version if available, unless timestamp newer */
-parsed_file* get_file_possibly_cached(char* filepath, const char* docroot) {
+parsed_file* get_file_possibly_cached(char* filepath, const char* docroot, const char* searchpath) {
    struct stat statbuf;
    parsed_file* f = 0;
 
@@ -874,14 +938,17 @@ parsed_file* get_file_possibly_cached(char* filepath, const char* docroot) {
          }
       }
 
-      f = get_file(filepath, docroot, statbuf.st_size, CACHE_TEMPLATES_BOOL);
+      f = get_file(filepath, docroot, searchpath, CACHE_TEMPLATES_BOOL);
       if (f) {
          f->mtime = statbuf.st_mtime;
          per_req_init(f);
          zend_hash_update(YATS_GLOBALS(yats_hash), filepath, strlen(filepath)+1, &f, sizeof(parsed_file*), NULL);
       }
    } else {
-      zend_error(E_WARNING,"template not found: %s", filepath);
+      f = get_file(filepath, docroot, searchpath, CACHE_TEMPLATES_BOOL);
+      if (f) {
+         per_req_init(f);
+      }
    }
    return f;
 }
@@ -1243,9 +1310,10 @@ PHP_FUNCTION(yats_assign)
 PHP_FUNCTION(yats_define)
 {
    char *filepath;
-   pval *arg1 = NULL, *arg2 = NULL;
+   pval *arg1 = NULL, *arg2 = NULL, *arg3 = NULL;
    parsed_file* f;
    char* docroot = 0;
+   char* searchpath = 0;
 
    if (ARG_COUNT(ht) == 1 ) {
       if( getParameters(ht, 1, &arg1) == FAILURE ) {
@@ -1254,6 +1322,11 @@ PHP_FUNCTION(yats_define)
    }
    else if (ARG_COUNT(ht) == 2 ) {
       if( getParameters(ht, 2, &arg1, &arg2) == FAILURE ) {
+          WRONG_PARAM_COUNT; /* prints/logs a warning and returns */
+      }
+   }
+   else if (ARG_COUNT(ht) == 3 ) {
+      if( getParameters(ht, 3, &arg1, &arg2, &arg3) == FAILURE ) {
           WRONG_PARAM_COUNT; /* prints/logs a warning and returns */
       }
    }
@@ -1270,7 +1343,14 @@ PHP_FUNCTION(yats_define)
        }
    }
 
-   f = get_file_possibly_cached(filepath, docroot);
+   if( arg3 ) {
+       convert_to_string(arg3);
+       if( strlen( arg3->value.str.val ) > 0 ) { 
+           searchpath = arg3->value.str.val;
+       }
+   }
+
+   f = get_file_possibly_cached(filepath, docroot, searchpath);
    if (!f) {
       /* error getting data from server */
       RETURN_FALSE; 

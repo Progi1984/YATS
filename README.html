@@ -79,7 +79,7 @@ variables for display via the template.
 <XMP>
 <?php
 // Define and parse template.
-$tmpl = yats_define("examp.tmpl");
+$tmpl = yats_define("/var/www/htdocs/examp.tmpl");
 
 // Omitted: Query DB or otherwise obtains some results.
 
@@ -202,11 +202,9 @@ Recognized Arguments:</h3>
 once for each loop.  See implicit looping.
 
 
-<h2>
-Sections</h2>
+<h2>Sections</h2>
 
-<h3>
-Syntax:</h3>
+<h3>Syntax:</h3>
 {{section:section_name}} ...&nbsp; some stuff ... {{/section:section_name}}
 or
 <br>{{section:section_name key1="val1" key2="val2"}} ...&nbsp; some stuff
@@ -254,6 +252,34 @@ Recognized Arguments</h3>
 <li><I>hidden</I>="<I>yes</I>" the section is hidden by default until explicitly shown via yats_hide(false). can be used for template comments.
 <li><I>parentloop</I>="<I>yes</I>" the child section loops with the parent instead of looping all the way through for each loop the parent's loops.
 <li><I>maxloops</I>="<I>5</I>" the section will not loop more than n number of times. Note that setting maxloops=0 will still display one row. Use hidden=yes instead.
+
+<h2>Includes</h2>
+
+<h3>Syntax:</h3>
+{{include file="relative/path/to/file"}} -- OR --<br/>
+{{include file="/absolute/path/to/file"}}
+
+<h3>Description:</h3>
+
+<p>If the path is relative, then the path will be appended to the directory of the parent template.
+This works even for nested templates.  Ie, if a includes b and b includes c, then c will be included
+relative to b. This is different from PHP includes, where all files are included relatve to the
+executing file.</p>
+
+<p>If the path is absolute, then the path will be appended to the docroot that was specified in the
+call to yats_define for the parent template.  If docroot was not specified, then it will be the
+parent template's directory, as if the path were relative.</p>
+
+<p>If a path contains the string "../" then an error is generated and the template is not loaded.
+This feature in combination with the docroot handling prevents a template from including a sub-template
+from a higher level directory unless the calling PHP code specifically allows it.</p>
+
+<p>An included template inherits all of the variables of the parent template.  It behaves exactly like a section.</p>
+
+<p>Warning!  Recursion checking is not currently performed.  So beware of endless loops.</p>
+
+
+
 
 <h2>Internationalization (I18n) with GNU Gettext</h2>
 

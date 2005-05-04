@@ -41,7 +41,7 @@
 
 
 /* poor man's package version system. auto* is friggin _hard_  */
-#define YATS_VERSION "0.93"
+#define YATS_VERSION "0.94"
 
 #ifdef COMPILE_DL_YATS
 ZEND_GET_MODULE(yats)
@@ -531,7 +531,7 @@ HashTable* parse_attrs(char* token, int bPerm) {
 #define TOKEN_GETTEXT "text"
 
 /* parse a buffer/section.  recursive */
-simple_list* parse_buf(char* buf, int bPerm) {
+simple_list* parse_buf(char* dir, char* docroot, char* buf, int bPerm) {
    simple_list* tokens = simple_list_new(bPerm);
    char* start = buf; /* start of current token */
    char* end = 0; /* end of current token */
@@ -594,7 +594,7 @@ simple_list* parse_buf(char* buf, int bPerm) {
                char tmp = *sec_end;
                simple_list* sect = 0;
                *sec_end = 0; /* null terminate string temporarily */
-               sect = parse_buf(end + elen + 1, bPerm);
+               sect = parse_buf(dir, docroot, end + elen + 1, bPerm);
                token_add(tokens, start + 8, tok_end, section, attrs, sect, bPerm);
                *sec_end = tmp; /* restore */
 
@@ -604,6 +604,56 @@ simple_list* parse_buf(char* buf, int bPerm) {
                start = end + elen + 1;
             }
             my_efree(end_token);
+         }
+         else if (!strncmp(start, "include", 7)) {
+             if( !dir ) {
+                 zend_error(E_ERROR,"Evaluating dynamic content. Include not allowed here.");
+             }
+             else {
+                 char **attr;
+                 if (zend_hash_find(attrs, "file", strlen("file") + 1, (void**)&attr) == SUCCESS) {
+                    char filepath[1024];
+                    char* file = *attr;
+                    char* dirbase = file[0] == '/' ? docroot : dir;
+
+                    if( strstr( file, "../" ) ) {
+                        zend_error(E_ERROR,"Invalid include. \"../\" is not allowed.  Included file was: %s", file);
+                    }
+                    else {
+
+                        snprintf(filepath, sizeof(filepath), "%s/%s", dirbase, file );
+
+                        struct stat statbuf;
+                        if( stat(filepath, &statbuf) ) {
+                            zend_error(E_ERROR,"Unable to stat file: %s", filepath);
+                        }
+                        else {
+                            FILE* f = fopen(filepath, "r");
+                            if ( !f ) {
+                                zend_error(E_ERROR,"Unable to open file: %s", filepath);
+                            }
+                            else {
+                               char* buf = emalloc(statbuf.st_size + 1);
+
+                               fread(buf, 1, statbuf.st_size, f);
+                               fclose(f);
+
+                               char* d_end = strrchr( filepath, '/' );
+                               if( d_end ) {
+                                   *d_end = 0;
+                               }
+
+                               simple_list* sect = parse_buf(filepath, docroot, buf, bPerm);
+                               token_add(tokens, filepath, filepath + strlen(filepath)-1, section, attrs, sect, bPerm);
+                           }
+                        }
+                    }
+                 }
+                 else {
+                     zend_error(E_ERROR,"Include missing file attribute");
+                 }
+             }
+             start = end + elen + 1;
          }
          else if (!strncmp(start, TOKEN_GETTEXT, glen )) {
             int end_token_len = slen + 1 + (tok_end - start + 1) + elen;
@@ -661,6 +711,7 @@ simple_list* parse_buf(char* buf, int bPerm) {
 typedef struct _parsed_file {
    char* filepath;
    char* dir;
+   char* docroot;
    char* filename;
    char* buf;
    simple_list* tokens;
@@ -672,7 +723,7 @@ typedef struct _parsed_file {
 
 
 /* load a file */
-parsed_file* get_file(const char* filepath, int file_len, int bPerm) {
+parsed_file* get_file(const char* filepath, const char* docroot, int file_len, int bPerm) {
    parsed_file* res = 0;
    FILE* f = fopen(filepath, "r");
    if (f) {
@@ -680,6 +731,7 @@ parsed_file* get_file(const char* filepath, int file_len, int bPerm) {
       res = pecalloc(1, sizeof(parsed_file), bPerm);
 
       res->dir = pestrdup(filepath, bPerm);
+      res->docroot = docroot ? pestrdup( docroot, bPerm) : pestrdup( res->dir, bPerm );
       char* p = strrchr( res->dir, '/');
       if( p ) {
           if( *p != 0 ) {
@@ -696,7 +748,7 @@ parsed_file* get_file(const char* filepath, int file_len, int bPerm) {
 
       buf[file_len] = 0;
 
-      res->tokens = parse_buf(buf, bPerm);
+      res->tokens = parse_buf(res->dir, res->docroot, buf, bPerm);
       my_efree(buf);
    } else {
       zend_error(E_WARNING,"Unable to open template %s", filepath);
@@ -734,6 +786,9 @@ int release_file(parsed_file* f, int bPerm) {
       }
       if( f->dir ) {
          my_pefree( f->dir, bPerm );
+      }
+      if( f->docroot ) {
+         my_pefree( f->docroot, bPerm );
       }
       if( f->filename ) {
          my_pefree( f->filename, bPerm );
@@ -789,7 +844,7 @@ void per_req_init(parsed_file* f) {
 }
 
 /* Retrieves file. Uses cached version if available, unless timestamp newer */
-parsed_file* get_file_possibly_cached(char* filepath) {
+parsed_file* get_file_possibly_cached(char* filepath, const char* docroot) {
    struct stat statbuf;
    parsed_file* f = 0;
 
@@ -817,7 +872,7 @@ parsed_file* get_file_possibly_cached(char* filepath) {
          }
       }
 
-      f = get_file(filepath, statbuf.st_size, CACHE_TEMPLATES_BOOL);
+      f = get_file(filepath, docroot, statbuf.st_size, CACHE_TEMPLATES_BOOL);
       if (f) {
          f->mtime = statbuf.st_mtime;
          per_req_init(f);
@@ -1068,7 +1123,7 @@ int fill_buf(parsed_file* f, yatsstring* buf, simple_list* tokens, HashTable* at
                      // and parse_buf modifies the input string temporarily.  Fixing parse_buf
                      // would be another option.
                      char* localized_text_copy = strdup( localized_text );
-                     simple_list* section = parse_buf( localized_text_copy, CACHE_TEMPLATES_BOOL );
+                     simple_list* section = parse_buf( 0, 0, localized_text_copy, CACHE_TEMPLATES_BOOL );
                      free( localized_text_copy );
 
                      bSuccess = fill_buf(f, &my_buf, section, tok->attrs, 0, row, 1);
@@ -1186,22 +1241,40 @@ PHP_FUNCTION(yats_assign)
 PHP_FUNCTION(yats_define)
 {
    char *filepath;
-   pval* arg;
+   pval *arg1 = NULL, *arg2 = NULL;
    parsed_file* f;
+   char* docroot = 0;
 
-   if (ARG_COUNT(ht) != 1 || getParameters(ht, 1, &arg) == FAILURE) {
-      WRONG_PARAM_COUNT; /* prints/logs a warning and returns */
+   if (ARG_COUNT(ht) == 1 ) {
+      if( getParameters(ht, 1, &arg1) == FAILURE ) {
+          WRONG_PARAM_COUNT; /* prints/logs a warning and returns */
+      }
+   }
+   else if (ARG_COUNT(ht) == 2 ) {
+      if( getParameters(ht, 2, &arg1, &arg2) == FAILURE ) {
+          WRONG_PARAM_COUNT; /* prints/logs a warning and returns */
+      }
    }
 
-   /* validate yats arg */
-   convert_to_string(arg);
-   filepath = arg->value.str.val;
 
-   f = get_file_possibly_cached(filepath);
+   /* validate yats arg */
+   convert_to_string(arg1);
+   filepath = arg1->value.str.val;
+
+   if( arg2 ) {
+       convert_to_string(arg2);
+       if( strlen( arg2->value.str.val ) > 0 ) { 
+           docroot = arg2->value.str.val;
+       }
+   }
+
+   f = get_file_possibly_cached(filepath, docroot);
    if (!f) {
       /* error getting data from server */
       RETURN_FALSE; 
    }
+
+
 
    RETVAL_RESOURCE((long)f);
 }

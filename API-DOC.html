@@ -9,7 +9,7 @@
  load (and parse) a template
  <p>
  <b>returns:</b> template handle, or false if error
- <p><b>args:</b></br><blockquote><b>filename:</b> path/filename of the template to be loaded<br></blockquote><br><br></blockquote>
+ <p><b>args:</b></br><blockquote><b>filename:</b> fully qualified path/filename of the template to be loaded<br><b>docroot:</b> optional. document root for any sub-included templates. defaults to same directory as filename.  So for a template to include another in a higher-level directory, the php code must explicitly allow it.<br></blockquote><br><br></blockquote>
  <h3><a name='yats_assign'>bool yats_assign(handle template, string key, mixed value) -- or --<br>bool yats_assign(handle template, array vars)</a></h3>
  <blockquote>
  assign php variable(s) into template namespace for potential use
@@ -21,7 +21,7 @@
  inserts assigned variables into template as appropriate and returns buffer. If a locale is given and gettext is properly configured and template contains {{text}}..{{/text}} tags, then this function will return localized strings.
  <p>
  <b>returns:</b> buffer containing fully processed template output
- <p><b>args:</b></br><blockquote><b>template:</b> template handle, as returned from yats_define()<br><b>locale:</b> code for a valid locale installed on your O/S, eg es_ES<br><b>gettext_domain:</b> filename of gettext messages file, without the path or extension.  ie: messages, NOT messages.po<br><b>gettext_dir:</b> directory in which to find the messages file. If ommitted default paths are searched by gettext<br></blockquote><br><br></blockquote>
+ <p><b>args:</b></br><blockquote><b>template:</b> template handle, as returned from yats_define()<br><b>locale:</b> code for a valid locale installed on your O/S, eg es_ES. See GNU gettext documentation.<br><b>gettext_domain:</b> filename of gettext messages file, without the path or extension.  ie: messages, NOT messages.po.  See GNU gettext documentation.<br><b>gettext_dir:</b> root directory in which locale specific catalog directories are located. If ommitted default paths are searched by gettext. See GNU gettext documentation.<br></blockquote><br><br></blockquote>
  <h3><a name='yats_hide'>bool yats_hide(handle template, string section, bool hide [, int row])</a></h3>
  <blockquote>
  sets hidden state of a named template section

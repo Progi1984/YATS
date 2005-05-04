@@ -15,7 +15,9 @@ $api = array(methods =>
                         sig => "handle yats_define(string filename)",
                         ret => "template handle, or false if error",
                         args => array(
-                           'filename' => "path/filename of the template to be loaded"
+                           'filename' => "fully qualified path/filename of the template to be loaded",
+                           'docroot' => "optional. document root for any sub-included templates. defaults to same directory as filename.  " . 
+                                        "So for a template to include another in a higher-level directory, the php code must explicitly allow it."
                            )
                   ),
                   array(method => yats_assign,

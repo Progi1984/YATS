@@ -605,7 +605,7 @@ simple_list* parse_buf(char* dir, char* docroot, char* buf, int bPerm) {
             }
             my_efree(end_token);
          }
-         else if (!strncmp(start, "include", 7)) {
+         else if (!strncmp(start, "include ", 8)) {
              if( !dir ) {
                  zend_error(E_ERROR,"Evaluating dynamic content. Include not allowed here.");
              }
@@ -637,6 +637,8 @@ simple_list* parse_buf(char* dir, char* docroot, char* buf, int bPerm) {
 
                                fread(buf, 1, statbuf.st_size, f);
                                fclose(f);
+
+                               buf[statbuf.st_size] = 0;
 
                                char* d_end = strrchr( filepath, '/' );
                                if( d_end ) {

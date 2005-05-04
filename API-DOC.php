@@ -12,7 +12,7 @@ $api = array(methods =>
                methods => array(
                   array(method => "yats_define",
                         desc => "load (and parse) a template",
-                        sig => "handle yats_define(string filename)",
+                        sig => "handle yats_define(string filename, string docroot)",
                         ret => "template handle, or false if error",
                         args => array(
                            'filename' => "fully qualified path/filename of the template to be loaded",

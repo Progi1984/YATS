@@ -87,7 +87,8 @@
  */
 class TemplateMgr {
 
-    var $mPath;                           // Path to templates
+    var $mPath;                           // Global Path to templates
+    var $mSearchPath;                      // Global Sub-Include search path.
     var $mBlockHandles        = array();  // Array of template 'handles'
     var $mBlockKeys           = array();  // Array of template keys and vals indexed to handles.
     var $mGlobalAssignArray   = array();  // Array of Global Key/Val pairs
@@ -104,13 +105,16 @@ class TemplateMgr {
      * Initializes the root path of the template.
      *
      * @param path      A string.
-     *                  An optional path to all template files.
+     *                  An optional global path to all template files.
+     * @param searcpath A string.
+     *                  An optional global searchpath for sub-included template files.
      *
      * @see #set_root
      */
-    function TemplateMgr($path = "")
+    function TemplateMgr($path = "", $searchpath="")
     {
         $this->set_root($path);
+        $this->mSearchPath = $searchpath;
     }
 
     function get_root() {
@@ -139,7 +143,7 @@ class TemplateMgr {
      */
     function define($handle, $template)
     {
-        $this->mBlockHandles[$handle] = yats_define($this->mPath . $template, $this->get_root() );
+        $this->mBlockHandles[$handle] = yats_define($this->mPath . $template, $this->mPath );
 
         yats_assign($this->mBlockHandles[$handle], $this->mGlobalAssignArray);
 
@@ -149,6 +153,22 @@ class TemplateMgr {
 
         $this->mBlockKeys = array($handle => array());
     }
+
+    function searchpath_define($handle, $template, $root = null, $searchpath = null)
+    {
+        $root = $root ? $root : $this->mPath;
+        $searchpath = $searchpath ? $searchpath : $this->mSearchPath;
+        $this->mBlockHandles[$handle] = yats_define( $template, $root, $searchpath );
+
+        yats_assign($this->mBlockHandles[$handle], $this->mGlobalAssignArray);
+
+        foreach($this->mGlobalHideSectionArray as $key => $hidden) {
+           yats_hide($this->mBlockHandles[$handle], $key, $hidden);
+        }
+
+        $this->mBlockKeys = array($handle => array());
+    }
+
 
     /**
      * UnDefine a previously defined template

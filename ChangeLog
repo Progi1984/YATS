@@ -1,3 +1,19 @@
+2005-05-04 00:02  danda
+
+	* yats.c: fix: null-terminate string for included file
+
+2005-05-03 23:36  danda
+
+	* API-DOC.html, API-DOC.php: fix yats_define documentation
+
+2005-05-03 23:13  danda
+
+	* yats.c: Bump revision to 0.95
+
+2005-05-03 23:12  danda
+
+	* ChangeLog: update ChangeLog
+
 2005-05-03 23:09  danda
 
 	* utils/class.TemplateMgr.php: Adding support for template

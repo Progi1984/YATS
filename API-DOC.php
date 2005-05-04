@@ -12,12 +12,15 @@ $api = array(methods =>
                methods => array(
                   array(method => "yats_define",
                         desc => "load (and parse) a template",
-                        sig => "handle yats_define(string filename, string docroot)",
+                        sig => "handle yats_define(string filename [, string docroot] [, string searchpath] )",
                         ret => "template handle, or false if error",
                         args => array(
                            'filename' => "fully qualified path/filename of the template to be loaded",
                            'docroot' => "optional. document root for any sub-included templates. defaults to same directory as filename.  " . 
-                                        "So for a template to include another in a higher-level directory, the php code must explicitly allow it."
+                                        "So for a template to include another in a higher-level directory, the php code must explicitly allow it.",
+                           'searchpath' => "if specified, then this should be a list of absolutely paths (directories) separated by semi-colons. " .
+                                           "If filename is a relative path, then it will be matched against the searchpaths in order.  Likewise for " .
+                                           "any sub-includes within the template."
                            )
                   ),
                   array(method => yats_assign,

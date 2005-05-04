@@ -4,12 +4,12 @@
 <li><a href='#yats_hide'>yats_hide</a>
 <li><a href='#yats_getvars'>yats_getvars</a>
 </ul>
- <h3><a name='yats_define'>handle yats_define(string filename, string docroot)</a></h3>
+ <h3><a name='yats_define'>handle yats_define(string filename [, string docroot] [, string searchpath] )</a></h3>
  <blockquote>
  load (and parse) a template
  <p>
  <b>returns:</b> template handle, or false if error
- <p><b>args:</b></br><blockquote><b>filename:</b> fully qualified path/filename of the template to be loaded<br><b>docroot:</b> optional. document root for any sub-included templates. defaults to same directory as filename.  So for a template to include another in a higher-level directory, the php code must explicitly allow it.<br></blockquote><br><br></blockquote>
+ <p><b>args:</b></br><blockquote><b>filename:</b> fully qualified path/filename of the template to be loaded<br><b>docroot:</b> optional. document root for any sub-included templates. defaults to same directory as filename.  So for a template to include another in a higher-level directory, the php code must explicitly allow it.<br><b>searchpath:</b> if specified, then this should be a list of absolutely paths (directories) separated by semi-colons. If filename is a relative path, then it will be matched against the searchpaths in order.  Likewise for any sub-includes within the template.<br></blockquote><br><br></blockquote>
  <h3><a name='yats_assign'>bool yats_assign(handle template, string key, mixed value) -- or --<br>bool yats_assign(handle template, array vars)</a></h3>
  <blockquote>
  assign php variable(s) into template namespace for potential use

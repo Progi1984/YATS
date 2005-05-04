@@ -266,6 +266,9 @@ This works even for nested templates.  Ie, if a includes b and b includes c, the
 relative to b. This is different from PHP includes, where all files are included relatve to the
 executing file.</p>
 
+<p>If the path is relative and a searchpath was passed to yats_define() then the relative path
+will be appended to each of the searchpaths until a match is found, or all paths are exhausted.</p>
+
 <p>If the path is absolute, then the path will be appended to the docroot that was specified in the
 call to yats_define for the parent template.  If docroot was not specified, then it will be the
 parent template's directory, as if the path were relative.</p>

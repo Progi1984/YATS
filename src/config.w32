@@ -1,0 +1,13 @@
+// $Id$
+// vim:ft=javascript
+
+// If your extension references something external, use ARG_WITH
+// ARG_WITH("yats", "for yats support", "no");
+
+// Otherwise, use ARG_ENABLE
+// ARG_ENABLE("yats", "enable yats support", "no");
+
+if (PHP_YATS != "no") {
+	EXTENSION("yats", "yats.c");
+}
+

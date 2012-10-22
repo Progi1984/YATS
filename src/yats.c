@@ -49,14 +49,10 @@ zend_module_entry yats_module_entry = {
 ZEND_GET_MODULE(yats)
 #endif
 
-/* {{{ PHP_INI
- */
-/* Remove comments and fill if you need to have entries in php.ini
+/* {{{ INI Settings */
 PHP_INI_BEGIN()
-    STD_PHP_INI_ENTRY("yats.global_value",      "42", PHP_INI_ALL, OnUpdateLong, global_value, zend_yats_globals, yats_globals)
-    STD_PHP_INI_ENTRY("yats.global_string", "foobar", PHP_INI_ALL, OnUpdateString, global_string, zend_yats_globals, yats_globals)
+	PHP_INI_ENTRY(YATS_INI_CACHE, "0", PHP_INI_ALL, NULL)
 PHP_INI_END()
-*/
 /* }}} */
 
 /* {{{ php_yats_init_globals
@@ -74,9 +70,7 @@ static void php_yats_init_globals(zend_yats_globals *yats_globals)
  */
 PHP_MINIT_FUNCTION(yats)
 {
-	/* If you have INI entries, uncomment these lines 
 	REGISTER_INI_ENTRIES();
-	*/
 	return SUCCESS;
 }
 /* }}} */
@@ -85,9 +79,7 @@ PHP_MINIT_FUNCTION(yats)
  */
 PHP_MSHUTDOWN_FUNCTION(yats)
 {
-	/* uncomment this line if you have INI entries
 	UNREGISTER_INI_ENTRIES();
-	*/
 	return SUCCESS;
 }
 /* }}} */
@@ -115,12 +107,21 @@ PHP_RSHUTDOWN_FUNCTION(yats)
 PHP_MINFO_FUNCTION(yats)
 {
 	php_info_print_table_start();
+	php_info_print_table_header(1, "YATS -- Yet Another Template System");
+	php_info_print_table_end();
+
+	php_info_print_table_start();
+	php_info_print_table_row(2, "version", YATS_VERSION);
+	php_info_print_table_row(2, "author", "Dan Libby");
+	php_info_print_table_row(2, "author", "Franck \"Progi1984\" LEFEVRE");
+	php_info_print_table_row(2, "homepage", "https://github.com/Progi1984/YATS");
+	php_info_print_table_end();
+
+	php_info_print_table_start();
 	php_info_print_table_header(2, "yats support", "enabled");
 	php_info_print_table_end();
 
-	/* Remove comments if you have entries in php.ini
 	DISPLAY_INI_ENTRIES();
-	*/
 }
 /* }}} */
 

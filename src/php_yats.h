@@ -2,6 +2,8 @@
 #ifndef PHP_YATS_H
 #define PHP_YATS_H
 
+#include "php_yats_common.h"
+
 extern zend_module_entry yats_module_entry;
 #define phpext_yats_ptr &yats_module_entry
 

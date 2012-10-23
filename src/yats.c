@@ -8,9 +8,8 @@
 #include "ext/standard/info.h"
 #include "php_yats.h"
 
-/* If you declare any globals in php_yats.h uncomment this:
+// Declaration global variables
 ZEND_DECLARE_MODULE_GLOBALS(yats)
-*/
 
 /* True global resources - no need for thread safety here */
 static int le_yats;
@@ -39,7 +38,7 @@ zend_module_entry yats_module_entry = {
 	PHP_RSHUTDOWN(yats),	/* Replace with NULL if there's nothing to do at request end */
 	PHP_MINFO(yats),
 #if ZEND_MODULE_API_NO >= 20010901
-	"0.1", /* Replace with version number for your extension */
+	YATS_VERSION, /* Replace with version number for your extension */
 #endif
 	STANDARD_MODULE_PROPERTIES
 };
@@ -89,6 +88,7 @@ PHP_MSHUTDOWN_FUNCTION(yats)
  */
 PHP_RINIT_FUNCTION(yats)
 {
+	YATS_G(bCache) = INI_INT(YATS_INI_CACHE);
 	return SUCCESS;
 }
 /* }}} */

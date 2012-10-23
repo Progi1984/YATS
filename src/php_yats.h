@@ -27,15 +27,10 @@ PHP_MINFO_FUNCTION(yats);
 
 PHP_FUNCTION(confirm_yats_compiled);	/* For testing, remove later. */
 
-/* 
-  	Declare any global variables you may need between the BEGIN
-	and END macros here:     
-
 ZEND_BEGIN_MODULE_GLOBALS(yats)
 	long  global_value;
-	char *global_string;
+	char bCache;
 ZEND_END_MODULE_GLOBALS(yats)
-*/
 
 /* In every utility function you add that needs to use variables 
    in php_yats_globals, call TSRMLS_FETCH(); after declaring other 

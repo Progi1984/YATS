@@ -1,5 +1,0 @@
-Makefile
-.deps
-yats.lo
-.libs
-libyats.la

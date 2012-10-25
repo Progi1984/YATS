@@ -1,12 +1,17 @@
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+	#include "config.h"
 #endif
 
+#include <stdio.h>
 #include "php.h"
 #include "php_ini.h"
-#include "ext/standard/info.h"
+//#include "ext/standard/info.h"
 #include "php_yats.h"
+
+#include <libintl.h>
+#include <locale.h>
+#include <sys/stat.h>
 
 // Declaration global variables
 ZEND_DECLARE_MODULE_GLOBALS(yats)
@@ -19,7 +24,11 @@ static int le_yats;
  * Every user visible function must have an entry in yats_functions[].
  */
 const zend_function_entry yats_functions[] = {
-	PHP_FE(confirm_yats_compiled,	NULL)		/* For testing, remove later. */
+	PHP_FE(yats_define, NULL)
+	PHP_FE(yats_assign, NULL)
+	PHP_FE(yats_getbuf, NULL)
+	PHP_FE(yats_getvars, NULL)
+	PHP_FE(yats_hide, NULL)
 	{NULL, NULL, NULL}	/* Must be the last line in yats_functions[] */
 };
 /* }}} */
@@ -78,26 +87,52 @@ PHP_MINIT_FUNCTION(yats)
  */
 PHP_MSHUTDOWN_FUNCTION(yats)
 {
+   HashTable* ht = YATS_G(htFileCache);
+   if (ht) {
+	  my_hash_destroy(ht, YATS_G(iCache));
+	  YATS_G(htFileCache) = 0;
+   }
 	UNREGISTER_INI_ENTRIES();
 	return SUCCESS;
 }
 /* }}} */
 
-/* Remove if there's nothing to do at request start */
 /* {{{ PHP_RINIT_FUNCTION
  */
 PHP_RINIT_FUNCTION(yats)
 {
-	YATS_G(bCache) = INI_INT(YATS_INI_CACHE);
+	// Determine whether to use yats cacheing or not
+	YATS_G(sCache) = INI_INT(YATS_INI_CACHE);
+	YATS_G(iCache) = (int)YATS_G(sCache);
+	YATS_G(htFileCache) = 0;
 	return SUCCESS;
 }
 /* }}} */
 
-/* Remove if there's nothing to do at request end */
 /* {{{ PHP_RSHUTDOWN_FUNCTION
  */
 PHP_RSHUTDOWN_FUNCTION(yats)
 {
+	HashTable* ht = YATS_G(htFileCache);
+	if (ht) {
+		void** val = 0;
+		zend_hash_internal_pointer_reset(ht);
+
+		do {
+			if (zend_hash_get_current_data(ht, (void**)&val) == SUCCESS) {
+				release_request_data(val);
+			}
+			else {
+				break;
+			}
+		} while(zend_hash_move_forward(ht) == SUCCESS );
+
+
+		if(!YATS_G(iCache)) {
+			my_hash_destroy(ht, YATS_G(iCache));
+			YATS_G(htFileCache) = 0;
+		}
+	}
 	return SUCCESS;
 }
 /* }}} */
@@ -124,34 +159,6 @@ PHP_MINFO_FUNCTION(yats)
 	DISPLAY_INI_ENTRIES();
 }
 /* }}} */
-
-
-/* Remove the following function when you have succesfully modified config.m4
-   so that your module can be compiled into PHP, it exists only for testing
-   purposes. */
-
-/* Every user-visible function in PHP should document itself in the source */
-/* {{{ proto string confirm_yats_compiled(string arg)
-   Return a string to confirm that the module is compiled in */
-PHP_FUNCTION(confirm_yats_compiled)
-{
-	char *arg = NULL;
-	int arg_len, len;
-	char *strg;
-
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &arg, &arg_len) == FAILURE) {
-		return;
-	}
-
-	len = spprintf(&strg, 0, "Congratulations! You have successfully modified ext/%.78s/config.m4. Module %.78s is now compiled into PHP.", "yats", arg);
-	RETURN_STRINGL(strg, len, 0);
-}
-/* }}} */
-/* The previous line is meant for vim and emacs, so it can correctly fold and 
-   unfold functions in source code. See the corresponding marks just before 
-   function definition, where the functions purpose is also documented. Please 
-   follow this convention for the convenience of others editing your code.
-*/
 
 
 /*

@@ -6,7 +6,13 @@ Make sure that the comment is aligned:
 
 if test "$PHP_YATS" != "no"; then
   PHP_NEW_EXTENSION(yats, yats.c \
-  						  yats_main.c \
+  						  yats_hash.c \
   						  yats_utils.c \
-  , $ext_shared)
+  						  yats_list.c \
+  						  yats_token.c \
+  						  yats_string.c \
+  						  yats_parser.c \
+  						  yats_cache.c \
+  						  yats_main.c \
+ , $ext_shared)
 fi

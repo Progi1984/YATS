@@ -90,6 +90,7 @@ int release_request_data(void** f);
 parsed_file* get_file_possibly_cached(char* filepath, const char* docroot, const char* searchpath);
 // yats_hash.c
 HashTable* hash_init(dtor_func_t dtr, int bPerm);
+void my_hash_destroy(HashTable* ht, int bPerm);
 // yats_list.c
 simple_list* simple_list_new(int bPerm);
 void* simple_list_reset(simple_list* list);

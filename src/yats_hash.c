@@ -13,3 +13,10 @@ HashTable* hash_init(dtor_func_t dtr, int bPerm) {
    }
    return ht;
 }
+
+void my_hash_destroy(HashTable* ht, int bPerm) {
+   if( ht ) {
+      zend_hash_destroy(ht);
+      my_pefree(ht, bPerm);
+   }
+}

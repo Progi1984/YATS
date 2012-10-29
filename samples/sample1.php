@@ -1,6 +1,6 @@
 <?php
 
-$tmpl = yats_define("sample1.tmpl");
+$tmpl = yats_define("sample1.tmpl", '', getcwd());
 
 $thing = $GLOBALS[HTTP_GET_VARS][thing];
 if(!$thing) {
